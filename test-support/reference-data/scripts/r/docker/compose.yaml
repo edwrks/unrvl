@@ -1,0 +1,12 @@
+services:
+  generate:
+    build:
+      context: ../
+      dockerfile: docker/Dockerfile
+    # A single platform avoids architecture-dependent floating-point output.
+    platform: linux/amd64
+    network_mode: none
+    volumes:
+      - ../../../data/fixtures/r:/reference/data/fixtures/r:ro
+      - ../../../data/r:/reference/data/r
+      - ..:/reference/scripts/r:ro

@@ -1,0 +1,24 @@
+[package]
+name = "unrvl-stats"
+description = "Statistical routines for slices of f64"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "README.md"
+
+[dependencies]
+unrvl-numerics.workspace = true
+
+[dev-dependencies]
+reference-data.workspace = true
+test-utils.workspace = true
+
+proptest.workspace = true
+
+[lints]
+workspace = true

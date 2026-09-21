@@ -1,0 +1,31 @@
+[package]
+name = "unrvl"
+description = "Numerical, statistical, time-series, and risk analysis tools for Rust"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "README.md"
+
+[features]
+default = []
+
+numerics = ["dep:unrvl-numerics"]
+risk = ["dep:unrvl-risk"]
+stats = ["dep:unrvl-stats"]
+timeseries = ["dep:unrvl-timeseries"]
+
+full = ["numerics", "risk", "stats", "timeseries"]
+
+[dependencies]
+unrvl-numerics = { workspace = true, optional = true }
+unrvl-risk = { workspace = true, optional = true }
+unrvl-stats = { workspace = true, optional = true }
+unrvl-timeseries= { workspace = true, optional = true }
+
+[lints]
+workspace = true

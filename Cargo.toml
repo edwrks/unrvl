@@ -1,0 +1,50 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/unrvl",
+    "crates/unrvl-numerics",
+    "crates/unrvl-risk",
+    "crates/unrvl-stats",
+    "crates/unrvl-timeseries",
+
+    "test-support/reference-data",
+    "test-support/test-utils",
+
+    "apps/playground",
+]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2024"
+authors = ["Ed"]
+license = "MIT OR Apache-2.0"
+description = "Rust foundations for data exploration."
+repository = "https://github.com/edwrks/unrvl"
+homepage = "https://github.com/edwrks/unrvl"
+keywords = ["statistics", "stats", "quantitative", "analysis", "math"]
+categories = ["mathematics", "science"]
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "deny"
+
+[workspace.lints.clippy]
+pedantic = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
+mod_module_files = "deny"
+similar_names = "allow"
+
+[workspace.dependencies]
+unrvl = { path = "crates/unrvl" }
+unrvl-numerics = { version = "0.0.1", path = "crates/unrvl-numerics" }
+unrvl-risk = { version = "0.0.1", path = "crates/unrvl-risk" }
+unrvl-stats = { version = "0.0.1", path = "crates/unrvl-stats" }
+unrvl-timeseries = { version = "0.0.1", path = "crates/unrvl-timeseries" }
+
+reference-data = { path = "test-support/reference-data" }
+test-utils = { path = "test-support/test-utils" }
+
+proptest = "1"
+thiserror = "2"

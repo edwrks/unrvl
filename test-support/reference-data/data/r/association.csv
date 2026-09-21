@@ -1,0 +1,5 @@
+case,n,covariance,correlation
+baseline,8,0.00030000000000000003,0.84611411222664934
+perfect-negative,5,-5,-0.99999999999999978
+perfect-positive,5,5,0.99999999999999978
+zero-covariance,4,0,0

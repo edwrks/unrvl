@@ -1,0 +1,7 @@
+component,version
+R,4.6.1
+MASS,7.3-65
+class,7.3-23
+e1071,1.7-17
+proxy,0.4-29
+renv,1.2.3

@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  PROPTEST_CASES: "2048"
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Verify NIST fixtures
+        run: |
+          sha256sum --check test-support/reference-data/data/nist/linear-regression/SHA256SUMS
+          sha256sum --check test-support/reference-data/data/nist/univariate/SHA256SUMS
+
+      - name: Set up the repository Rust toolchain
+        run: |
+          rustc --version --verbose
+          rustup component add rustfmt clippy
+          cargo --version
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Check Clippy
+        run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
+
+      - name: Build the workspace
+        run: cargo build --locked --workspace --all-targets --all-features
+
+      - name: Test debug builds
+        run: |
+          cargo test --locked --workspace --all-targets --all-features
+          cargo test --locked --workspace --doc --all-features
+
+      - name: Test release builds
+        run: |
+          cargo test --locked --release --workspace --all-targets --all-features
+          cargo test --locked --release --workspace --doc --all-features
+
+      - name: Build documentation
+        env:
+          RUSTDOCFLAGS: "-D warnings"
+        run: cargo doc --locked --workspace --all-features --no-deps

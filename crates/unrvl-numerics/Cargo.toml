@@ -1,0 +1,20 @@
+[package]
+name = "unrvl-numerics"
+description = "Numerical primitives and utilities for floating-point computation"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords.workspace = true
+categories.workspace = true
+readme = "README.md"
+
+[dependencies]
+
+[dev-dependencies]
+test-utils.workspace = true
+
+[lints]
+workspace = true
