@@ -1,12 +1,7 @@
 # unrvl
 
-Quantitative analysis tools for Rust.
-
-`unrvl` is an opinionated collection of numerical, statistical, time-series, and
-risk-analysis tools for working with financial data.
-
-It is purposefully _not_ a comprehensive statistics framework. The project
-grows only as the need arises.
+An  opinionated collection of quantitative analysis tools for Rust, with a focus
+on financial data.
 
 ## Crates
 
@@ -23,14 +18,14 @@ The facade has no default features. Components can be enabled individually:
 
 ```toml
 [dependencies]
-unrvl = { version = "...", features = ["stats"] }
+unrvl = { version = "0.0.2", features = ["stats"] }
 ```
 
 or fully enabled:
 
 ```toml
 [dependencies]
-unrvl = { version = "...", features = ["full"] }
+unrvl = { version = "0.0.2", features = ["full"] }
 ```
 
 and accessed through their corresponding module:
@@ -57,53 +52,21 @@ let variance = xs.var();
 
 ## Approach
 
-`unrvl` favours small, composable functions with explicit definitions.
+The APIs operate deliberately on `f64` values and document their estimator
+conventions, input requirements, and undefined results.
 
-A few principles guide the project:
+Implementations are checked against independent reference data and mathematical
+properties.
 
-- keep numerical primitives, statistical methods, time-series operations, and
-  risk measures separate;
-- use `f64` deliberately rather than generalising over numeric types;
-- make estimator conventions, assumptions, and undefined cases explicit;
-- improve numerical robustness where practical;
-- validate important implementations against independent reference data and
-  mathematical properties; and
-- add abstractions and configuration only when they earn their place.
+## Numerical Behavior
 
-Where multiple valid conventions exist, `unrvl` chooses a well-motivated default
-for its intended analytical use, documents that choice, and only exposes
-alternatives when they serve a concrete purpose.
+The implementations use compensated summation and scaling where appropriate
+to reduce rounding error and avoid intermediate overflow and underflow. Results
+remain subject to the range and precision of `f64`.
 
-For statistics intended to characterise an underlying population or process, the
-default functions use documented sample estimators. For example, variance is
-Bessel-corrected sample variance, while skewness and excess kurtosis use
-bias-corrected sample estimators.
-
-The goal is not to hide these choices behind an API. A function should make it
-possible to understand what quantity is being calculated and what that quantity
-means.
-
-## Numerical Behaviour
-
-Floating-point arithmetic can complicate otherwise simple statistical formulas.
-
-Where useful, `unrvl` uses techniques such as compensated summation, corrected
-centring, and scaled deviations to reduce avoidable loss of precision, overflow,
-and underflow.
-
-These techniques improve numerical behaviour but do not remove the finite range
-and precision of `f64`. Individual functions document relevant behaviour for
-cases such as:
-
-- insufficient observations;
-- non-finite inputs;
-- constant samples;
-- undefined statistics;
-- overflow and underflow; and
-- estimator-specific sample requirements.
-
-Undefined statistical results generally return `NaN`. Programmer errors, such as
-incompatible input shapes, may panic.
+Individual functions document their input requirements and numerical limitations.
+Undefined statistical results generally return `NaN`; invalid input shapes may
+panic.
 
 ## Status
 

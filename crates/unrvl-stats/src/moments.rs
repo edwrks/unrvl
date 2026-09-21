@@ -1,7 +1,4 @@
-//! Moments and shape statistics.
-//!
-//! This module contains mean, sample variance, bias-corrected sample skewness,
-//! and bias-corrected sample excess kurtosis.
+//! Sample moments and bias-corrected shape statistics.
 
 mod extension;
 mod kurtosis;

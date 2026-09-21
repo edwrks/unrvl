@@ -125,9 +125,7 @@ pub fn assert_all_approx_eq(xs: &[f64], ys: &[f64], tolerance: Tolerance) {
 /// The comparison succeeds if either the absolute or relative tolerance
 /// is satisfied. See [`Tolerance`] for the comparison rule.
 ///
-/// # Panics
-///
-/// Panics if either value is infinite or NaN, or if the values differ
+/// Returns `false` if either value is non-finite or if the values differ
 /// by more than both tolerances.
 #[must_use]
 pub fn approx_eq(x: f64, y: f64, tolerance: Tolerance) -> bool {

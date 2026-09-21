@@ -1,4 +1,7 @@
-//! Compensated summation utilities for improved floating-point accuracy.
+//! Neumaier compensated summation for `f64` values.
+//!
+//! Use [`NeumaierSum`] for incremental accumulation or [`NeumaierSumExt`]
+//! to sum an iterator.
 
 /// Accumulates values using Neumaier compensated summation.
 ///

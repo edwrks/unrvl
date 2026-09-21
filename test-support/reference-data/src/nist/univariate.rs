@@ -1,5 +1,12 @@
-//! Loads bundled [NIST univariate Statistical Reference Datasets] and their
-//! certified statistics for use as test references.
+//! [NIST univariate Statistical Reference Datasets] with certified reference
+//! statistics.
+//!
+//! Select a [`Dataset`] and call [`Dataset::load`] to obtain its observations
+//! and published statistics. References include the observation count, sample
+//! mean, sample standard deviation, and lag-one autocorrelation.
+//!
+//! Data is embedded in the crate. Loading requires no network access and
+//! checks that the parsed observation count matches the published count.
 //!
 //! [NIST univariate Statistical Reference Datasets]: https://www.itl.nist.gov/div898/strd/univ/homepage.html
 

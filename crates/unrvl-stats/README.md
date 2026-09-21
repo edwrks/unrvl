@@ -1,3 +1,3 @@
 # Stats
 
-Statistical routines for slices of f64.
+Statistical routines for slices of `f64`.

@@ -1,3 +1,3 @@
 # Unrvl - IN PROGRESS
 
-Rust foundations for data exploration.
+Numerical, statistical, time-series, and risk analysis tools for Rust.

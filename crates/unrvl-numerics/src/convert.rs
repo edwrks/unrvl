@@ -1,4 +1,4 @@
-//! Numeric conversion helpers with explicit representability guarantees.
+//! Numeric conversions with explicit representability guarantees.
 
 /// Converts a `usize` to `f64` when it is within the lossless integer range.
 ///

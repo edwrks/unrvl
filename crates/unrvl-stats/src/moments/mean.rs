@@ -42,7 +42,7 @@ mod tests {
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq, assert_approx_eq};
     use test_utils::strategies::{
-        constant_samples, finite_samples, finite_scale, power_of_two_scale,
+        constant_sample, exact_translation_case, finite_sample, positive_power_of_two_scale,
     };
     use unrvl_numerics::extrema::min_max;
 
@@ -139,14 +139,14 @@ mod tests {
     proptest! {
         #[test]
         #[expect(clippy::float_cmp, reason = "exactly constant observations")]
-        fn constant_sample_has_constant_mean(sample in constant_samples(1)) {
+        fn constant_sample_has_constant_mean(sample in constant_sample(1)) {
             let expected = sample[0];
             let result = mean(&sample);
             prop_assert_eq!(result, expected);
         }
 
         #[test]
-        fn mean_is_within_sample_bounds(sample in finite_samples(1)) {
+        fn mean_is_within_sample_bounds(sample in finite_sample(1)) {
             let (min, max) = min_max(&sample);
             let result = mean(&sample);
             prop_assert!(min <= result && result <= max);
@@ -154,8 +154,7 @@ mod tests {
 
         #[test]
         fn mean_is_translation_equivariant(
-            sample in finite_samples(1),
-            offset in finite_scale()
+            (sample, offset) in exact_translation_case(2)
         ) {
             let translated: Vec<_> = sample.iter().map(|x| x + offset).collect();
             let x = mean(&sample) + offset;
@@ -166,8 +165,8 @@ mod tests {
 
         #[test]
         fn mean_is_scale_equivariant(
-            sample in finite_samples(1),
-            scale in power_of_two_scale()
+            sample in finite_sample(1),
+            scale in positive_power_of_two_scale()
         ) {
             let scaled: Vec<_> = sample.iter().map(|x| x * scale).collect();
             let x = mean(&sample) * scale;
@@ -177,7 +176,7 @@ mod tests {
         }
 
         #[test]
-        fn mean_is_reversal_invariant(sample in finite_samples(1)) {
+        fn mean_is_reversal_invariant(sample in finite_sample(1)) {
             let mut reordered = sample.clone();
             reordered.reverse();
 
@@ -188,7 +187,7 @@ mod tests {
         }
 
         #[test]
-        fn mean_is_replication_invariant(sample in finite_samples(1)) {
+        fn mean_is_replication_invariant(sample in finite_sample(1)) {
             let mut replicated = sample.clone();
             replicated.extend_from_slice(&sample);
 

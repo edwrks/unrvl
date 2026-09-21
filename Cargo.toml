@@ -14,7 +14,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.1"
+version = "0.0.2"
 edition = "2024"
 authors = ["Ed"]
 license = "MIT OR Apache-2.0"
@@ -38,10 +38,10 @@ similar_names = "allow"
 
 [workspace.dependencies]
 unrvl = { path = "crates/unrvl" }
-unrvl-numerics = { version = "0.0.1", path = "crates/unrvl-numerics" }
-unrvl-risk = { version = "0.0.1", path = "crates/unrvl-risk" }
-unrvl-stats = { version = "0.0.1", path = "crates/unrvl-stats" }
-unrvl-timeseries = { version = "0.0.1", path = "crates/unrvl-timeseries" }
+unrvl-numerics = { version = "0.0.2", path = "crates/unrvl-numerics" }
+unrvl-risk = { version = "0.0.2", path = "crates/unrvl-risk" }
+unrvl-stats = { version = "0.0.2", path = "crates/unrvl-stats" }
+unrvl-timeseries = { version = "0.0.2", path = "crates/unrvl-timeseries" }
 
 reference-data = { path = "test-support/reference-data" }
 test-utils = { path = "test-support/test-utils" }

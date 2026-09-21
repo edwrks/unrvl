@@ -1,7 +1,7 @@
 //! Extremum operations for slices of floating-point values.
 //!
-//! Provides utilities for finding minimum and maximum values and their indices,
-//! including variants that compare values by absolute magnitude.
+//! NaN values are ignored when a non-NaN value is present. Index-returning
+//! operations choose the first occurrence when values tie.
 
 /// Returns the maximum absolute value from the given slice.
 ///
