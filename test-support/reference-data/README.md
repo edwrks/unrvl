@@ -3,8 +3,8 @@
 Test reference datasets and loaders for the workspace's statistical tests.
 
 - **NIST:** published datasets and certified numerical reference values.
-- **R conformance:** small, hand-authored fixture families and committed golden
-  values for statistical definitions.
+- **R conformance:** small, hand-authored fixture families and committed
+  reference values for statistical definitions.
 - **Rust unit/property tests:** undefined cases, floating-point stress, and
   invariants.
 

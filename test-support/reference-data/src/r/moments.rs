@@ -1,4 +1,14 @@
-//! Loads bundled R conformance references for moment statistics.
+//! R conformance fixtures and reference values for moment statistics.
+//!
+//! Select a [`Dataset`] and call [`Dataset::load`] to obtain its observations
+//! and corresponding [`Statistics`].
+//!
+//! References cover the arithmetic mean, sample variance with denominator
+//! `n - 1`, and `e1071` Type-2 skewness and excess kurtosis.
+//!
+//! The fixture corpus is designed to produce finite values for every referenced
+//! statistic. Fixtures and generated results are embedded in the crate; loading
+//! them does not run R or require network access.
 
 /// A bundled R moments dataset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -168,17 +178,28 @@ impl Parser {
         assert_eq!(
             header,
             Self::FIXTURE_HEADER,
-            "moments fixture CSV header must match expected schema "
+            "moments fixture CSV header should match the expected schema "
         );
 
-        fixture
-            .take_while(|line| !line.trim().is_empty())
+        let observations: Vec<f64> = fixture
             .map(|line| {
-                line.trim()
+                let value: f64 = line
+                    .trim()
                     .parse()
-                    .expect("fixture values should be numerical")
+                    .expect("fixture values should be numerical");
+
+                assert!(value.is_finite(), "fixture values should be finite");
+
+                value
             })
-            .collect()
+            .collect();
+
+        assert!(
+            !observations.is_empty(),
+            "moments fixture should contain observations"
+        );
+
+        observations
     }
 
     fn parse_statistics(&self) -> Statistics {

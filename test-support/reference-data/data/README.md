@@ -56,7 +56,7 @@ where any reference would be undefined or numerically unreliable.
 
 The [generator guide](../scripts/r/README.md) defines all statistics and the
 single Docker command. The generator reads fixtures without modifying them and
-writes finite, deterministic golden tables under `r/`.
+writes finite, deterministic reference tables under `r/`.
 
 ## NIST Integrity
 

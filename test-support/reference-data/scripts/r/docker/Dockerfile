@@ -5,8 +5,8 @@ ARG E1071_VERSION=1.7-17
 
 LABEL org.opencontainers.image.title="R reference values generator"
 LABEL org.opencontainers.image.description="Independent R and e1071 stats reference generator"
-LABEL risk.golden.cran.snapshot="${CRAN_SNAPSHOT}"
-LABEL risk.golden.e1071.version="${E1071_VERSION}"
+LABEL ref.cran.snapshot="${CRAN_SNAPSHOT}"
+LABEL ref.e1071.version="${E1071_VERSION}"
 
 ENV CRAN_SNAPSHOT=${CRAN_SNAPSHOT} \
     E1071_VERSION=${E1071_VERSION} \
