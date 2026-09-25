@@ -71,7 +71,7 @@ pub fn centered_scaled(xs: &[f64]) -> Option<(f64, impl Iterator<Item = f64> + C
 ///
 /// `x` must be finite and nonnegative.
 #[inline]
-fn power_of_two_unit(x: f64) -> f64 {
+pub fn power_of_two_unit(x: f64) -> f64 {
     debug_assert!(x.is_finite() && x >= 0.0);
 
     if x == 0.0 {

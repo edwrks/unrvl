@@ -3,7 +3,7 @@ use unrvl_numerics::summation::NeumaierSumExt;
 
 use crate::internal::deviations::centered_scaled;
 
-/// Returns the sample variance of a slice using Bessel's correction.
+/// Returns the sample variance using Bessel's correction.
 ///
 /// The statistic is defined as:
 ///
@@ -13,23 +13,14 @@ use crate::internal::deviations::centered_scaled;
 ///           n - 1
 /// ```
 ///
-/// where `x̄` is the sample mean.
+/// where `n` is the number of observations and `x̄` is their arithmetic mean.
 ///
-/// Observations are divided by a power-of-two unit before centering. Centering
-/// retains a correction for mean rounding to better preserve small variations
-/// around a large or nearly constant level.
+/// Returns `NaN` if fewer than two observations are provided or any observation
+/// is non-finite. A finite constant sample returns zero.
 ///
-/// Squared deviations are accumulated with Neumaier compensated summation in
-/// scaled units. The result is divided by `n - 1`, then converted back to the
-/// original squared units without first squaring the scaling unit.
-///
-/// Returns `NaN` if fewer than two observations are provided or when the input
-/// contains non-finite values. A finite constant sample returns zero.
-///
-/// Scaling reduces avoidable intermediate overflow and underflow but does not
-/// eliminate rounding or extend the representable result range. Restoring the
-/// original units can overflow to positive infinity, and very small nonzero
-/// variances can underflow to zero.
+/// Uses scaling, corrected centering, and compensated summation to reduce
+/// numerical error. These do not eliminate rounding or underflow. The result
+/// can overflow to positive infinity or underflow to zero.
 ///
 /// # Panics
 ///

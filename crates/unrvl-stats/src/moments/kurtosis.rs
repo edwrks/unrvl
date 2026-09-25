@@ -7,10 +7,7 @@ use crate::internal::deviations::centered_scaled;
 /// type 2).
 ///
 /// Excess kurtosis uses the normal distribution's kurtosis as its zero
-/// reference. Positive values indicate greater tail extremity relative to
-/// normal, while negative values indicate less.
-///
-/// The statistic is defined as:
+/// reference. The statistic is defined as:
 ///
 /// ```text
 ///              n(n + 1)                        3(n - 1)²
@@ -18,20 +15,15 @@ use crate::internal::deviations::centered_scaled;
 ///        (n - 1)(n - 2)(n - 3)               (n - 2)(n - 3)
 /// ```
 ///
-/// where `zᵢ` is the standardized deviation using the Bessel-corrected sample
-/// standard deviation.
+/// where `n` is the number of observations and `zᵢ = (xᵢ - x̄) / s`, using
+/// the arithmetic mean `x̄` and Bessel-corrected sample standard deviation `s`.
 ///
-/// Observations are divided by a power-of-two unit before centering. Centering
-/// retains a correction for mean rounding, and central powers are accumulated
-/// with Neumaier compensated summation. The scaling cancels from the
-/// standardized result and reduces avoidable overflow and underflow.
+/// Returns `NaN` for fewer than four observations, a constant sample, or
+/// input containing non-finite values.
 ///
-/// Scaling does not eliminate floating-point rounding. When observations
-/// span an extreme range of magnitudes, very small scaled values can underflow
-/// to zero.
-///
-/// Returns `NaN` for samples shorter than four observations, constant
-/// samples, or input containing non-finite values.
+/// Uses scaling, corrected centering, and compensated summation to reduce
+/// numerical error. Rounding remains possible, and observations that are very
+/// small relative to the largest magnitude can underflow during scaling.
 ///
 /// # Panics
 ///

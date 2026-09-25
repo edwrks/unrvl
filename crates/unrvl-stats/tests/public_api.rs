@@ -1,5 +1,5 @@
 use unrvl_stats::prelude::*;
-use unrvl_stats::{moments, quantile};
+use unrvl_stats::{dispersion, moments, quantile};
 
 const XS: &[f64] = &[1.0, 2.0, 3.0, 4.0, 5.0];
 
@@ -27,4 +27,19 @@ fn quantile_functions_and_extension_methods_are_available_externally() {
     let _: f64 = XS.quantile(0.9);
     let _: Vec<f64> = XS.quantiles(&probabilities);
     let _: f64 = XS.median();
+}
+
+#[test]
+fn dispersion_functions_and_extension_methods_are_available_externally() {
+    let _: f64 = dispersion::iqr(XS);
+    let _: f64 = dispersion::mad(XS);
+    let _: f64 = dispersion::range(XS);
+    let _: f64 = dispersion::std_dev(XS);
+    let _: f64 = dispersion::cv(XS);
+
+    let _: f64 = XS.iqr();
+    let _: f64 = XS.mad();
+    let _: f64 = XS.range();
+    let _: f64 = XS.std_dev();
+    let _: f64 = XS.cv();
 }

@@ -2,22 +2,18 @@ use crate::quantile::quantile;
 
 /// Returns the median of `xs` using R's default Type 7 interpolation.
 ///
-/// This is equivalent to:
+/// Equivalent to [`quantile`] with probability `0.5`. For sorted observations,
+/// an odd sample length selects the middle observation; an even length
+/// interpolates halfway between the two middle observations.
 ///
-/// ```text
-/// quantile(xs, 0.50)
-/// ```
+/// The input slice does not need to be sorted. A single observation is returned
+/// unchanged.
 ///
-/// For an odd number of observations, the middle observation is returned. For
-/// an even number, the result is interpolated halfway between the two middle
-/// observations.
+/// Returns `NaN` if `xs` is empty or contains a non-finite observation.
 ///
-/// The input slice does not need to be sorted.
+/// # Panics
 ///
-/// A single-observation sample returns that observation.
-///
-/// Returns `NaN` for an empty sample or when any observation is `NaN` or
-/// infinite.
+/// Panics if `xs.len() - 1` exceeds `2^53`.
 #[must_use]
 pub fn median(xs: &[f64]) -> f64 {
     quantile(xs, 0.50)

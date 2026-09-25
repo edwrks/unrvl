@@ -1,16 +1,10 @@
-//! R conformance fixtures and reference values for moment statistics.
+//! R conformance fixtures and reference values for dispersion statistics.
 //!
 //! Select a [`Dataset`] and call [`Dataset::load`] to obtain its observations
-//! and corresponding [`Statistics`].
-//!
-//! References cover the arithmetic mean, sample variance with denominator
-//! `n - 1`, and `e1071` Type-2 skewness and excess kurtosis.
-//!
-//! The fixture corpus is designed to produce finite values for every referenced
-//! statistic. Fixtures and generated results are embedded in the crate; loading
-//! them does not run R or require network access.
+//! and corresponding [`Statistics`]. Fixtures and reference values are
+//! embedded; loading them does not run R or require network access.
 
-/// A bundled R moments dataset.
+/// A bundled R dispersion dataset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Dataset {
     /// Uneven tails.
@@ -19,18 +13,15 @@ pub enum Dataset {
     /// Ordinary decimal observations.
     Baseline,
 
-    /// Four observations and small-sample corrections.
+    /// Four observations with interpolated quartiles.
     MinimumShapeSample,
-
-    /// Zero skewness.
-    Symmetric,
 
     /// Repeated integer observations and quantile boundaries.
     Ties,
 }
 
 impl Dataset {
-    const REFERENCES: &'static str = include_str!("../../data/r/moments.csv");
+    const REFERENCES: &'static str = include_str!("../../data/r/dispersion.csv");
 
     /// Loads the fixture and its corresponding R reference statistics.
     ///
@@ -47,7 +38,6 @@ impl Dataset {
             Self::AsymmetricTail => "asymmetric-tail",
             Self::Baseline => "baseline",
             Self::MinimumShapeSample => "minimum-shape-sample",
-            Self::Symmetric => "symmetric",
             Self::Ties => "ties",
         }
     }
@@ -55,25 +45,22 @@ impl Dataset {
     const fn fixture(self) -> &'static str {
         match self {
             Self::AsymmetricTail => {
-                include_str!("../../data/fixtures/r/moments/asymmetric-tail.csv")
+                include_str!("../../data/fixtures/r/dispersion/asymmetric-tail.csv")
             }
             Self::Baseline => {
-                include_str!("../../data/fixtures/r/moments/baseline.csv")
+                include_str!("../../data/fixtures/r/dispersion/baseline.csv")
             }
             Self::MinimumShapeSample => {
-                include_str!("../../data/fixtures/r/moments/minimum-shape-sample.csv")
-            }
-            Self::Symmetric => {
-                include_str!("../../data/fixtures/r/moments/symmetric.csv")
+                include_str!("../../data/fixtures/r/dispersion/minimum-shape-sample.csv")
             }
             Self::Ties => {
-                include_str!("../../data/fixtures/r/moments/ties.csv")
+                include_str!("../../data/fixtures/r/dispersion/ties.csv")
             }
         }
     }
 }
 
-/// One moments fixture and its R reference statistics.
+/// One dispersion fixture and its R reference statistics.
 #[derive(Debug)]
 pub struct Reference {
     dataset: Dataset,
@@ -101,14 +88,15 @@ impl Reference {
     }
 }
 
-/// Reference moment statistics computed by R.
+/// Reference dispersion statistics computed by R.
 #[derive(Debug, Clone, Copy)]
 pub struct Statistics {
     n: usize,
-    mean: f64,
-    variance: f64,
-    skewness: f64,
-    excess_kurtosis: f64,
+    range: f64,
+    iqr: f64,
+    mad: f64,
+    std_dev: f64,
+    cv: f64,
 }
 
 impl Statistics {
@@ -118,28 +106,35 @@ impl Statistics {
         self.n
     }
 
-    /// Arithmetic mean.
+    /// Difference between the maximum and minimum observations.
     #[must_use]
-    pub const fn mean(&self) -> f64 {
-        self.mean
+    pub const fn range(&self) -> f64 {
+        self.range
     }
 
-    /// Sample variance with denominator `n - 1`.
+    /// Interquartile range using Type 7 quartiles.
     #[must_use]
-    pub const fn variance(&self) -> f64 {
-        self.variance
+    pub const fn iqr(&self) -> f64 {
+        self.iqr
     }
 
-    /// Adjusted sample skewness (e1071 Type 2).
+    /// Median absolute deviation from the sample median, without scaling.
     #[must_use]
-    pub const fn skewness(&self) -> f64 {
-        self.skewness
+    pub const fn mad(&self) -> f64 {
+        self.mad
     }
 
-    /// Adjusted excess kurtosis (e1071 Type 2).
+    /// Sample standard deviation using the variance denominator `n - 1`.
     #[must_use]
-    pub const fn excess_kurtosis(&self) -> f64 {
-        self.excess_kurtosis
+    pub const fn std_dev(&self) -> f64 {
+        self.std_dev
+    }
+
+    /// Signed coefficient of variation: sample standard deviation divided by
+    /// the arithmetic mean, expressed as a ratio.
+    #[must_use]
+    pub const fn cv(&self) -> f64 {
+        self.cv
     }
 }
 
@@ -149,7 +144,7 @@ struct Parser {
 
 impl Parser {
     const FIXTURE_HEADER: &'static str = "value";
-    const REFERENCE_HEADER: &'static str = "case,n,mean,variance,skewness,excess_kurtosis";
+    const REFERENCE_HEADER: &'static str = "case,n,range,iqr,mad,std_dev,cv";
 
     const fn new(dataset: Dataset) -> Self {
         Self { dataset }
@@ -173,12 +168,12 @@ impl Parser {
 
         let header = fixture
             .next()
-            .expect("moments fixture should contain a header");
+            .expect("dispersion fixture should contain a header");
 
         assert_eq!(
             header,
             Self::FIXTURE_HEADER,
-            "moments fixture CSV header should match the expected schema "
+            "dispersion fixture CSV header should match the expected schema"
         );
 
         let observations: Vec<f64> = fixture
@@ -196,7 +191,7 @@ impl Parser {
 
         assert!(
             !observations.is_empty(),
-            "moments fixture should contain observations"
+            "dispersion fixture should contain observations"
         );
 
         observations
@@ -209,12 +204,12 @@ impl Parser {
 
         let header = reference
             .next()
-            .expect("moments reference csv should contain a header");
+            .expect("dispersion reference CSV should contain a header");
 
         assert_eq!(
             header,
             Self::REFERENCE_HEADER,
-            "moments reference CSV header should match the expected schema"
+            "dispersion reference CSV header should match the expected schema"
         );
 
         let row = reference
@@ -222,61 +217,67 @@ impl Parser {
                 line.split_once(',')
                     .is_some_and(|(row_case, _)| row_case == case)
             })
-            .expect("moments reference data should contain the requested case");
+            .expect("dispersion reference data should contain the requested case");
 
         let mut fields = row.split(',');
 
         let row_case = fields
             .next()
-            .expect("moments reference row should contain a case");
+            .expect("dispersion reference row should contain a case");
 
         assert_eq!(
             row_case, case,
-            "moments reference row case should match the requested case"
+            "dispersion reference row case should match the requested case"
         );
 
         let n = fields
             .next()
-            .expect("moments reference row should contain n")
+            .expect("dispersion reference row should contain n")
             .parse()
             .expect("n should be numerical");
 
-        let mean = fields
+        let range = fields
             .next()
-            .expect("moments reference row should contain a mean")
+            .expect("dispersion reference row should contain range")
             .parse()
-            .expect("mean should be numerical");
+            .expect("range should be numerical");
 
-        let variance = fields
+        let iqr = fields
             .next()
-            .expect("moments reference row should contain a variance")
+            .expect("dispersion reference row should contain iqr")
             .parse()
-            .expect("variance should be numerical");
+            .expect("iqr should be numerical");
 
-        let skewness = fields
+        let mad = fields
             .next()
-            .expect("moments reference row should contain a skewness")
+            .expect("dispersion reference row should contain mad")
             .parse()
-            .expect("skewness should be numerical");
+            .expect("mad should be numerical");
 
-        let excess_kurtosis = fields
+        let std_dev = fields
             .next()
-            .expect("moments reference row should contain an excess kurtosis")
+            .expect("dispersion reference row should contain std dev")
             .parse()
-            .expect("excess kurtosis should numerical");
+            .expect("std_dev should be numerical");
+
+        let cv = fields
+            .next()
+            .expect("dispersion reference row should contain cv")
+            .parse()
+            .expect("cv should be numerical");
 
         assert!(
             fields.next().is_none(),
-            "moments reference row should contain exactly six fields"
+            "dispersion reference row should contain exactly seven fields"
         );
 
         assert!(
-            [mean, variance, skewness, excess_kurtosis]
+            [range, iqr, mad, std_dev, cv]
                 .into_iter()
                 .all(f64::is_finite),
-            "moment reference statistics should be finite"
+            "dispersion reference statistics should be finite"
         );
 
-        Statistics { n, mean, variance, skewness, excess_kurtosis }
+        Statistics { n, range, iqr, mad, std_dev, cv }
     }
 }

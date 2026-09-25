@@ -1,7 +1,9 @@
 use unrvl_numerics::convert::usize_to_f64;
 use unrvl_numerics::prelude::*;
 
-/// Returns the arithmetic mean of a slice using Neumaier compensated summation.
+use crate::internal::deviations::power_of_two_unit;
+
+/// Returns the arithmetic mean of `xs`.
 ///
 /// The statistic is defined as:
 ///
@@ -10,18 +12,19 @@ use unrvl_numerics::prelude::*;
 /// x̄ = -----
 ///       n
 /// ```
-/// Returns `NaN` for an empty slice or when the input contains non-finite
-/// values.
 ///
-/// A finite constant sample returns its value exactly.
+/// Returns `NaN` for an empty slice or input containing non-finite values.
+/// A nonempty, finite constant sample returns its value exactly.
 ///
-/// Compensated summation reduces rounding error but does not prevent an
-/// intermediate sum from overflowing, in which case the result may be
-/// non-finite.
+/// Uses Neumaier compensated summation to reduce rounding error. If the
+/// unscaled sum overflows, retries in power-of-two scaled units. Rounding
+/// remains possible, and scaling can lose observations that are very small
+/// relative to the largest magnitude.
 ///
 /// # Panics
 ///
-/// Panics if the slice length exceeds `2^53`.
+/// Panics if the slice length exceeds `2^53`, unless the input is a finite
+/// constant sample.
 #[must_use]
 pub fn mean(xs: &[f64]) -> f64 {
     let Some((&first, rest)) = xs.split_first() else {
@@ -34,7 +37,22 @@ pub fn mean(xs: &[f64]) -> f64 {
     }
 
     let n = usize_to_f64(xs.len());
-    xs.iter().neumaier_sum() / n
+    let sum = xs.iter().neumaier_sum();
+
+    if sum.is_finite() {
+        return sum / n;
+    }
+
+    if xs.iter().any(|x| !x.is_finite()) {
+        return f64::NAN;
+    }
+
+    let maximum = xs.iter().map(|x| x.abs()).fold(0.0_f64, f64::max);
+
+    let unit = power_of_two_unit(maximum);
+    let scaled_sum = xs.iter().map(|&x| x / unit).neumaier_sum();
+
+    (scaled_sum / n) * unit
 }
 
 #[cfg(test)]
@@ -121,11 +139,12 @@ mod tests {
     }
 
     #[test]
-    fn returns_non_finite_when_intermediate_sum_overflows() {
-        let xs = &[f64::MAX, f64::MAX / 2.0];
-        let result = mean(xs);
+    fn remains_finite_when_intermediate_sum_overflows() {
+        let xs = [f64::MAX, f64::MAX / 2.0];
+        let expected = f64::MAX * 0.75;
+        let result = mean(&xs);
 
-        assert!(!result.is_finite());
+        assert_eq!(result, expected);
     }
 
     #[test]

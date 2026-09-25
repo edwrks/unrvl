@@ -11,7 +11,7 @@
 //! values must be finite, and reference probabilities must be unique and
 //! lie in `[0, 1]`.
 
-/// A bundled R quantiles dataset.
+/// A bundled R quantile dataset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Dataset {
     /// Uneven tails.
@@ -67,7 +67,7 @@ impl Dataset {
     }
 }
 
-/// One quantiles fixture and its R reference statistics.
+/// One quantile fixture and its R reference statistics.
 #[derive(Debug)]
 pub struct Reference {
     dataset: Dataset,
@@ -140,12 +140,12 @@ impl Parser {
 
         let header = fixture
             .next()
-            .expect("quantiles fixture should contain a header");
+            .expect("quantile fixture should contain a header");
 
         assert_eq!(
             header,
             Self::FIXTURE_HEADER,
-            "quantiles fixture CSV header should match the expected schema"
+            "quantile fixture CSV header should match the expected schema"
         );
 
         let observations: Vec<f64> = fixture
@@ -163,7 +163,7 @@ impl Parser {
 
         assert!(
             !observations.is_empty(),
-            "quantiles fixture should contain observations"
+            "quantile fixture should contain observations"
         );
 
         observations
@@ -175,12 +175,12 @@ impl Parser {
 
         let header = reference
             .next()
-            .expect("quantiles reference CSV should contain a header");
+            .expect("quantile reference CSV should contain a header");
 
         assert_eq!(
             header,
             Self::REFERENCE_HEADER,
-            "quantiles reference CSV header should match the expected schema"
+            "quantile reference CSV header should match the expected schema"
         );
 
         let mut statistics = Vec::new();
@@ -190,7 +190,7 @@ impl Parser {
 
             let row_case = fields
                 .next()
-                .expect("quantiles reference row should contain a case");
+                .expect("quantile reference row should contain a case");
 
             if row_case != case {
                 continue;
@@ -198,19 +198,19 @@ impl Parser {
 
             let probability: f64 = fields
                 .next()
-                .expect("quantiles reference row should contain a probability")
+                .expect("quantile reference row should contain a probability")
                 .parse()
                 .expect("probability should be numerical");
 
             let value: f64 = fields
                 .next()
-                .expect("quantiles reference row should contain a value")
+                .expect("quantile reference row should contain a value")
                 .parse()
                 .expect("quantile value should be numerical");
 
             assert!(
                 fields.next().is_none(),
-                "quantiles reference row should contain exactly three fields"
+                "quantile reference row should contain exactly three fields"
             );
 
             assert!(
@@ -225,7 +225,7 @@ impl Parser {
 
         assert!(
             !statistics.is_empty(),
-            "quantiles reference data should contain the requested case"
+            "quantile reference data should contain the requested case"
         );
 
         assert!(

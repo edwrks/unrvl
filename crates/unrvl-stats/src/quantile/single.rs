@@ -2,40 +2,22 @@ use super::internal::{is_valid_probability, is_valid_sample, type7};
 
 /// Returns the `p`-quantile of `xs` using R's default Type 7 interpolation.
 ///
-/// `p` must be in `[0.0, 1.0]`:
+/// For sorted observations, the zero-based position is `h = (n - 1) * p`, where
+/// `n` is the sample length. An integer position selects an observation;
+/// otherwise, the adjacent observations are linearly interpolated.
 ///
-/// ```text
-/// p = 0.00 => minimum
-/// p = 0.50 => median
-/// p = 0.95 => 95th percentile
-/// p = 1.00 => maximum
-/// ```
+/// Probabilities zero and one return the minimum and maximum, respectively. A
+/// single observation is returned for every valid probability.
 ///
-/// Type 7 treats the sorted observations as evenly spaced points from `0` to
-/// `1`. For a sample of length `n`, the zero-based interpolation position is:
+/// The input slice does not need to be sorted. The observations are copied and
+/// sorted before evaluation.
 ///
-/// ```text
-/// h = (n - 1) · p
-/// ```
+/// Returns `NaN` if `xs` is empty, any observation is non-finite, or `p` is
+/// non-finite or outside `[0.0, 1.0]`.
 ///
-/// If the position is an integer, the observation at that index is returned.
-/// Otherwise, the result is linearly interpolated between the observations
-/// immediately below and above it.
+/// # Panics
 ///
-/// A single-observation sample returns that observation for every valid
-/// probability.
-///
-/// The input slice does not need to be sorted. This function copies and sorts
-/// the observations before computing the quantile.
-///
-/// Interpolation is arranged to avoid overflow when adjacent finite
-/// observations straddle zero and their difference is not representable.
-///
-/// Returns `NaN` if:
-///
-/// - `xs` is empty;
-/// - any observation is `NaN` or infinite; or
-/// - `p` is `NaN`, infinite, or outside `[0.0, 1.0]`.
+/// Panics if `xs.len() - 1` exceeds `2^53`.
 #[must_use]
 pub fn quantile(xs: &[f64], p: f64) -> f64 {
     if !is_valid_sample(xs) || !is_valid_probability(p) {

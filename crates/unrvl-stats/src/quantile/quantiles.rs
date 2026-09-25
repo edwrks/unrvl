@@ -2,20 +2,22 @@ use super::internal::{is_valid_probability, is_valid_sample, type7};
 
 /// Returns multiple quantiles of `xs` using R's default Type 7 interpolation.
 ///
-/// This is equivalent to calling [`quantile`](super::quantile) once for each
-/// probability in `ps`, except that the input is copied and sorted only once.
-///
-/// Each probability must be finite and in the closed interval `[0.0, 1.0]`.
-///
-/// Results are returned in the same order as the requested probabilities.
+/// Equivalent to calling [`quantile`](super::quantile) for each probability in
+/// `ps`, except that the observations are copied and sorted only once.
 ///
 /// The input slice does not need to be sorted.
 ///
-/// Invalid probabilities produce `NaN` at their corresponding output positions
-/// without affecting other requested quantiles.
+/// Returns one result per requested probability, in the same order. Non-finite
+/// probabilities or probabilities outside `[0.0, 1.0]` produce `NaN` at their
+/// corresponding positions without affecting other results.
 ///
-/// Returns one `NaN` per requested probability if `xs` is empty or contains a
-/// `NaN` or infinite observation. An empty `ps` returns an empty vector.
+/// Returns one `NaN` per requested probability if `xs` is empty or contains
+/// a non-finite observation. An empty `ps` returns an empty vector regardless
+/// of the observations.
+///
+/// # Panics
+///
+/// Panics `xs.len() - 1` exceeds `2^53`.
 #[must_use]
 pub fn quantiles(xs: &[f64], ps: &[f64]) -> Vec<f64> {
     if ps.is_empty() {
