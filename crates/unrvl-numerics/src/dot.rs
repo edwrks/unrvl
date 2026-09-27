@@ -2,22 +2,24 @@
 
 use crate::summation::NeumaierSum;
 
-/// Computes `sum(xs[i] * ys[i])` using the Ogita-Rump-Oishi algorithm.
+/// Returns the compensated dot product of `xs` and `ys`.
 ///
-/// This function is intended for finite operands. It does not provide
-/// extended-real arithmetic: `NaN`, infinities, or intermediate product
-/// overflow can produce a non-finite result.
+/// Compensates for rounding in both multiplication and accumulation.
+/// Returns zero when both slices are empty.
+///
+/// Intended for finite operands. Non-finite inputs or intermediate overflow
+/// can produce a non-finite result, even when the mathematical dot product
+/// is finite.
 ///
 /// # Panics
 ///
 /// Panics if `xs` and `ys` have different lengths.
 ///
-/// # Example
+/// # Examples
 ///
 /// ```
 /// # use unrvl_numerics::dot::compensated_dot;
 /// let p53 = (1_u64 << 53) as f64;
-//
 /// let xs = [p53, 1.0, -p53];
 /// let ys = [1.0, 1.0, 1.0];
 ///
@@ -85,7 +87,7 @@ mod tests {
 
         // p53·1 + 1·1 + (−p53)·1 = 1 in real arithmetic.
         // Naive accumulation lands on 0 because the middle 1 is lost when added
-        // to p53. CompensatedDot recovers it.
+        // to p53. Compensated dot recovers it.
         assert_eq!(naive, 0.0);
         assert_eq!(compensated, expected);
     }

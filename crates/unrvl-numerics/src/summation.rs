@@ -75,7 +75,7 @@ impl NeumaierSum {
     ///
     /// ```
     /// # use unrvl_numerics::summation::NeumaierSum;
-    /// let mut acc = NeumaierSum::new();
+    /// let acc = NeumaierSum::new();
     ///
     /// assert_eq!(acc.total(), 0.0);
     /// ```
@@ -90,7 +90,7 @@ impl NeumaierSum {
     ///
     /// ```
     /// # use unrvl_numerics::summation::NeumaierSum;
-    /// let mut acc = NeumaierSum::with_value(1.5);
+    /// let acc = NeumaierSum::with_value(1.5);
     ///
     /// assert_eq!(acc.total(), 1.5);
     /// ```
@@ -120,7 +120,7 @@ impl NeumaierSum {
         self.sum = t;
     }
 
-    /// The current total summation.
+    /// Returns the accumulated sum including its rounding compensation.
     #[must_use]
     pub const fn total(&self) -> f64 {
         self.sum + self.c
@@ -221,11 +221,15 @@ impl<'a> std::iter::Sum<&'a f64> for NeumaierSum {
 pub trait NeumaierSumExt: Iterator + Sized {
     /// Consumes the iterator and returns its Neumaier-compensated sum.
     ///
+    /// Returns zero for an empty iterator. See [`NeumaierSum`] for the
+    /// numerical behavior of accumulation.
+    ///
     /// # Examples
     ///
     /// ```
     /// # use unrvl_numerics::summation::NeumaierSumExt;
     /// let total = [1.0, 2.0, 3.0].iter().neumaier_sum();
+    ///
     /// assert_eq!(total, 6.0);
     /// ```
     fn neumaier_sum(self) -> f64

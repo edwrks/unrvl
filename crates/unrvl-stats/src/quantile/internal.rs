@@ -87,9 +87,9 @@ pub(super) fn type7(sorted: &[f64], p: f64) -> f64 {
 /// a + fraction · (b - a)
 /// ```
 ///
-/// Near zero, a fused multiply-add avoids rounding weighted endpoints
-/// separately before combining them. For larger endpoints that straddle
-/// zero, a weighted representation avoids overflowing `b - a`.
+/// When `b - a` can be formed safely, a fused multiply-add minimizes
+/// intermediate rounding. For endpoints that straddle zero outside
+/// `±f64::MIN_POSITIVE`, a weighted representation avoids overflowing `b - a`.
 ///
 /// # Preconditions
 ///
@@ -102,6 +102,11 @@ fn interpolate(a: f64, b: f64, fraction: f64) -> f64 {
     debug_assert!(a <= b);
     debug_assert!((0.0..=1.0).contains(&fraction));
 
+    #[expect(clippy::float_cmp, reason = "select exact halfway interpolation")]
+    if fraction == 0.5 {
+        return a.midpoint(b);
+    }
+
     // With sorted endpoints, negative `a` and positive `b` is the only case
     // where `b - a` becomes an addition of magnitudes and can therefore
     // overflow.
@@ -112,8 +117,9 @@ fn interpolate(a: f64, b: f64, fraction: f64) -> f64 {
     // representable.
     let outside_tiny_range = a < -f64::MIN_POSITIVE || b > f64::MIN_POSITIVE;
 
-    // Use the weighted form only when forming `b - a` may overflow.
-    // Otherwise prefer the difference form, which needs just one rounded FMA.
+    // For zero-straddling endpoints outside the tiny range, use a weighted form
+    // rather than forming `b - a`. This avoids possible overflow and avoids
+    // rounding a potentially large opposite-sign difference.
     if straddles_zero && outside_tiny_range {
         a.mul_add(1.0 - fraction, fraction * b)
     } else {
@@ -265,6 +271,17 @@ mod tests {
 
             assert_eq!(interpolate(-3.0 * d, d, 0.5), -d);
             assert_eq!(interpolate(-d, 3.0 * d, 0.5), d);
+        }
+
+        #[test]
+        fn preserves_midpoint_at_normal_boundary() {
+            let lower = -f64::MIN_POSITIVE.next_up();
+            let upper = f64::MIN_POSITIVE.next_down();
+            let expected = -f64::from_bits(1);
+
+            let result = interpolate(lower, upper, 0.5);
+
+            assert_eq!(result, expected);
         }
     }
 }

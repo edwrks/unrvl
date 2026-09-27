@@ -2,3 +2,7 @@
 
 .local
 .DS_Store
+ROADMAP.md
+TODO.md
+
+.nvim*
