@@ -23,6 +23,6 @@ COPY .Rprofile renv.lock ./
 # complete package environment into the image's library, outside mounted source.
 RUN Rscript -e 'install.packages("renv"); renv::restore(prompt = FALSE)'
 
-COPY common.R moments.R dispersion.R quantiles.R association.R regression.R generate.R ./
+COPY common.R moments.R dispersion.R quantiles.R empirical.R association.R regression.R generate.R ./
 RUN Rscript -e 'source("common.R"); check_environment()'
 CMD ["Rscript", "generate.R"]

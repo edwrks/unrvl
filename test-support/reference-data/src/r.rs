@@ -7,5 +7,6 @@
 //! and floating-point stress cases are tested separately in Rust.
 
 pub mod dispersion;
+pub mod empirical;
 pub mod moments;
 pub mod quantiles;

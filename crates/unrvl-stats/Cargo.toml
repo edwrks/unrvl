@@ -12,6 +12,7 @@ categories.workspace = true
 readme = "README.md"
 
 [dependencies]
+thiserror.workspace = true
 unrvl-numerics.workspace = true
 
 [dev-dependencies]

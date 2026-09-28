@@ -19,10 +19,9 @@ From the repository root:
 docker compose -f test-support/reference-data/scripts/r/docker/compose.yaml run --build --rm generate
 ```
 
-This writes six tables to `data/r/` using a pinned R/CRAN/e1071 environment and
-`renv.lock`. See the [R generator guide](scripts/r/README.md) for schemas,
+This writes the reference tables to `data/r/` using a pinned R/CRAN/e1071
+environment and `renv.lock`. See the [R generator guide](scripts/r/README.md) for schemas,
 statistical conventions, reproducibility, and source organization.
 
 Every fixture in an R family must produce finite, usable values for every
 statistic in that family. Invalid cases fail generation.
-
