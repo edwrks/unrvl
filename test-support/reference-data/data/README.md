@@ -16,6 +16,7 @@ data/
 │   ├── moments/
 │   ├── dispersion/
 │   ├── quantiles/
+│   ├── empirical/
 │   ├── association/
 │   └── regression/
 ├── nist/
@@ -25,6 +26,8 @@ data/
     ├── moments.csv
     ├── dispersion.csv
     ├── quantiles.csv
+    ├── empirical.csv
+    ├── empirical-quantiles.csv
     ├── association.csv
     ├── regression.csv
     └── versions.csv
@@ -45,14 +48,22 @@ each corpus independent and easy to inspect.
 | `baseline`                              | Ordinary decimal observations and interpolation                     |
 | `asymmetric-tail`                       | Uneven tails and, for dispersion, a negative mean/CV                |
 | `ties`                                  | Repeated integer observations and quantile boundaries               |
+| `constant` / `singleton`                | Empirical steps for identical observations or a single observation  |
+| `two-point`                             | Constant empirical probabilities between distinct observations      |
 | `minimum-shape-sample`                  | Four observations and small-sample corrections                      |
 | `symmetric`                             | Zero skewness; included only in moments, where a zero mean is valid |
 | `perfect-positive` / `perfect-negative` | Exact linear relationships and correlation signs                    |
 | `zero-covariance`                       | Varying series with zero association                                |
 
-Constants, singular predictors, zero-mean CV cases, and extreme scales/offsets
-belong in Rust tests or appropriate NIST validation. Do not add them to a family
-where any reference would be undefined or numerically unreliable.
+Constant and singleton samples are valid empirical fixtures. Their query and
+probability lists live in `empirical.R`, alongside cases for ties and gaps
+between observations. The same samples supply ECDF, strict survival, and
+Hyndman–Fan Type 1 inverse ECDF references. Type 7 quantile references remain
+separate.
+
+Singular predictors, zero-mean CV cases, and extreme scales/offsets belong in
+Rust tests or appropriate NIST validation. Do not add a case to a family where
+any reference would be undefined or numerically unreliable.
 
 The [generator guide](../scripts/r/README.md) defines all statistics and the
 single Docker command. The generator reads fixtures without modifying them and
@@ -70,4 +81,3 @@ shasum -a 256 --check test-support/reference-data/data/nist/linear-regression/SH
 
 Use approximate comparisons with the workspace's shared test utilities. Choose
 tolerances appropriate to each statistic and numerical scale.
-

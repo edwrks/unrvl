@@ -280,3 +280,28 @@ impl Parser {
         Statistics { n, mean, variance, skewness, excess_kurtosis }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Dataset;
+
+    #[test]
+    fn all_datasets_load() {
+        let datasets = [
+            Dataset::AsymmetricTail,
+            Dataset::Baseline,
+            Dataset::MinimumShapeSample,
+            Dataset::Symmetric,
+            Dataset::Ties,
+        ];
+
+        for dataset in datasets {
+            let reference = dataset.load();
+            let statistics = reference.statistics();
+
+            assert_eq!(reference.dataset(), dataset);
+            assert_ne!(reference.observations(), []);
+            assert_eq!(statistics.n(), reference.observations().len());
+        }
+    }
+}
