@@ -18,6 +18,7 @@ data/
 │   ├── quantiles/
 │   ├── empirical/
 │   ├── association/
+│   ├── association-matrix/
 │   └── regression/
 ├── nist/
 │   ├── linear-regression/
@@ -29,6 +30,7 @@ data/
     ├── empirical.csv
     ├── empirical-quantiles.csv
     ├── association.csv
+    ├── association-matrix.csv
     ├── regression.csv
     └── versions.csv
 ```
@@ -42,6 +44,12 @@ Univariate families use exactly `value`; bivariate families use exactly `x,y`,
 with `x` the predictor and `y` the response for regression (`y ~ x`). Files
 contain small hand-authored observations. Deliberate copies across families keep
 each corpus independent and easy to inspect.
+
+`association-matrix/` contains rectangular numeric tables with one named
+column per variable and one row per aligned observation. Variable names must
+be nonempty and unique; header order defines the zero-based variable indices
+in `r/association-matrix.csv`. That output contains every sample-covariance
+and Pearson-correlation matrix entry, ordered by case, row, then column.
 
 | Case                                    | Purpose                                                             |
 | --------------------------------------- | ------------------------------------------------------------------- |
@@ -60,6 +68,12 @@ probability lists live in `empirical.R`, alongside cases for ties and gaps
 between observations. The same samples supply ECDF, strict survival, and
 Hyndman–Fan Type 1 inverse ECDF references. Type 7 quantile references remain
 separate.
+
+Paired association fixtures also supply Spearman and Kendall tau-b references.
+Dedicated cases cover monotonic nonlinear relationships, mixed ranks, and
+ties in one or both variables. Matrix fixtures cover a single variable,
+multiple scales, and linearly dependent nonconstant columns. These columns
+are valid for covariance and correlation even when the matrix is singular.
 
 Singular predictors, zero-mean CV cases, and extreme scales/offsets belong in
 Rust tests or appropriate NIST validation. Do not add a case to a family where

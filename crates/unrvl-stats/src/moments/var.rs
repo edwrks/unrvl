@@ -22,6 +22,8 @@ use crate::internal::deviations::centered_scaled;
 /// numerical error. These do not eliminate rounding or underflow. The result
 /// can overflow to positive infinity or underflow to zero.
 ///
+/// For `n` observations, uses `O(n)` time and `O(1)` additional memory.
+///
 /// # Panics
 ///
 /// Panics if a finite sample contains more than `2^53` observations.

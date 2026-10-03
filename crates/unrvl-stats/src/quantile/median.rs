@@ -11,6 +11,9 @@ use crate::quantile::quantile;
 ///
 /// Returns `NaN` if `xs` is empty or contains a non-finite observation.
 ///
+/// Copies and sorts the sample. For `n` observations, uses `O(n log n)` time
+/// and `O(n)` additional memory.
+///
 /// # Panics
 ///
 /// Panics if `xs.len() - 1` exceeds `2^53`.

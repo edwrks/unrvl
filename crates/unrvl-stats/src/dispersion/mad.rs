@@ -13,6 +13,8 @@ use crate::quantile::median;
 /// Overflow in an outlying absolute deviation does not invalidate the result
 /// when that deviation lies above the middle deviations.
 ///
+/// For `n` observations, uses `O(n log n)` time and `O(n)` additional memory.
+///
 /// # Panics
 ///
 /// Panics if `xs.len() - 1` exceeds `2^53`.

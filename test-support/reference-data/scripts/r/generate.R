@@ -16,6 +16,7 @@ generate_dispersion()
 generate_quantiles()
 generate_empirical()
 generate_association()
+generate_association_matrix()
 generate_regression()
 
 packages <- sort(names(renv::lockfile_read("renv.lock")$Packages), method = "radix")

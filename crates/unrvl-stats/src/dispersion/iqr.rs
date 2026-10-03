@@ -11,6 +11,8 @@ use crate::quantile::quantiles;
 /// The difference between the computed quartiles can overflow to positive
 /// infinity even when all observations are finite.
 ///
+/// For `n` observations, uses `O(n log n)` time and `O(n)` additional memory.
+///
 /// # Panics
 ///
 /// Panics if `xs.len() - 1` exceeds `2^53`.

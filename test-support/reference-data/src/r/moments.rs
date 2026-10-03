@@ -10,6 +10,8 @@
 //! statistic. Fixtures and generated results are embedded in the crate; loading
 //! them does not run R or require network access.
 
+use super::parsing::{parse_finite, parse_usize, parse_value_fixture};
+
 /// A bundled R moments dataset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Dataset {
@@ -148,7 +150,6 @@ struct Parser {
 }
 
 impl Parser {
-    const FIXTURE_HEADER: &'static str = "value";
     const REFERENCE_HEADER: &'static str = "case,n,mean,variance,skewness,excess_kurtosis";
 
     const fn new(dataset: Dataset) -> Self {
@@ -156,7 +157,7 @@ impl Parser {
     }
 
     fn parse(self) -> Reference {
-        let observations = self.parse_fixture();
+        let observations = parse_value_fixture(self.dataset.fixture(), "moments fixture");
         let statistics = self.parse_statistics();
 
         assert_eq!(
@@ -168,40 +169,6 @@ impl Parser {
         Reference { dataset: self.dataset, observations, statistics }
     }
 
-    fn parse_fixture(&self) -> Vec<f64> {
-        let mut fixture = self.dataset.fixture().lines();
-
-        let header = fixture
-            .next()
-            .expect("moments fixture should contain a header");
-
-        assert_eq!(
-            header,
-            Self::FIXTURE_HEADER,
-            "moments fixture CSV header should match the expected schema "
-        );
-
-        let observations: Vec<f64> = fixture
-            .map(|line| {
-                let value: f64 = line
-                    .trim()
-                    .parse()
-                    .expect("fixture values should be numerical");
-
-                assert!(value.is_finite(), "fixture values should be finite");
-
-                value
-            })
-            .collect();
-
-        assert!(
-            !observations.is_empty(),
-            "moments fixture should contain observations"
-        );
-
-        observations
-    }
-
     fn parse_statistics(&self) -> Statistics {
         let case = self.dataset.case_name();
 
@@ -209,7 +176,7 @@ impl Parser {
 
         let header = reference
             .next()
-            .expect("moments reference csv should contain a header");
+            .expect("moments reference CSV should contain a header");
 
         assert_eq!(
             header,
@@ -224,58 +191,19 @@ impl Parser {
             })
             .expect("moments reference data should contain the requested case");
 
-        let mut fields = row.split(',');
-
-        let row_case = fields
-            .next()
-            .expect("moments reference row should contain a case");
+        let fields: Vec<_> = row.split(',').collect();
 
         assert_eq!(
-            row_case, case,
-            "moments reference row case should match the requested case"
-        );
-
-        let n = fields
-            .next()
-            .expect("moments reference row should contain n")
-            .parse()
-            .expect("n should be numerical");
-
-        let mean = fields
-            .next()
-            .expect("moments reference row should contain a mean")
-            .parse()
-            .expect("mean should be numerical");
-
-        let variance = fields
-            .next()
-            .expect("moments reference row should contain a variance")
-            .parse()
-            .expect("variance should be numerical");
-
-        let skewness = fields
-            .next()
-            .expect("moments reference row should contain a skewness")
-            .parse()
-            .expect("skewness should be numerical");
-
-        let excess_kurtosis = fields
-            .next()
-            .expect("moments reference row should contain an excess kurtosis")
-            .parse()
-            .expect("excess kurtosis should numerical");
-
-        assert!(
-            fields.next().is_none(),
+            fields.len(),
+            6,
             "moments reference row should contain exactly six fields"
         );
 
-        assert!(
-            [mean, variance, skewness, excess_kurtosis]
-                .into_iter()
-                .all(f64::is_finite),
-            "moment reference statistics should be finite"
-        );
+        let n = parse_usize(fields[1], "reference n");
+        let mean = parse_finite(fields[2], "reference mean");
+        let variance = parse_finite(fields[3], "reference variance");
+        let skewness = parse_finite(fields[4], "reference skewness");
+        let excess_kurtosis = parse_finite(fields[5], "reference excess_kurtosis");
 
         Statistics { n, mean, variance, skewness, excess_kurtosis }
     }

@@ -1,7 +1,7 @@
 //! Proptest strategies for bounded numerical inputs.
 //!
-//! Provides finite values, samples, constant and nonconstant samples, and
-//! scaling factors for numerical property tests.
+//! Provides finite values, samples, paired samples, aligned series, constant
+//! and nonconstant samples, and scaling factors for numerical property tests.
 //!
 //! Most strategies use moderate magnitudes so that tests can exercise
 //! mathematical properties without unrelated overflow or extreme-range effects.
@@ -36,7 +36,48 @@ pub fn finite_sample(min_len: usize) -> impl Strategy<Value = Vec<f64>> {
         "minimum length must be between one and {MAX_SAMPLE_LEN}"
     );
 
-    prop::collection::vec(-10_000.0..10_000.0, min_len..=MAX_SAMPLE_LEN)
+    prop::collection::vec(finite_value(), min_len..=MAX_SAMPLE_LEN)
+}
+
+/// Generates two non-empty, equal-length samples of bounded finite `f64`
+/// values.
+///
+/// Observations are generated independently in the range `[-10_000, 10_000)`.
+/// Each sample contains between `min_len` and [`MAX_SAMPLE_LEN`] observations,
+/// inclusive. Generating pairs before separating them into samples preserves
+/// equal lengths during shrinking. Neither sample is guaranteed nonconstant.
+///
+/// # Panics
+///
+/// Panics unless `min_len` is between one and [`MAX_SAMPLE_LEN`], inclusive.
+pub fn finite_paired_samples(min_len: usize) -> impl Strategy<Value = (Vec<f64>, Vec<f64>)> {
+    assert!(
+        (1..=MAX_SAMPLE_LEN).contains(&min_len),
+        "minimum length must be between one and {MAX_SAMPLE_LEN}"
+    );
+
+    prop::collection::vec((finite_value(), finite_value()), min_len..=MAX_SAMPLE_LEN)
+        .prop_map(|pairs| pairs.into_iter().unzip())
+}
+
+/// Generates aligned variable series of bounded finite `f64` values.
+///
+/// Generates between one and eight series, each containing between `min_len`
+/// and [`MAX_SAMPLE_LEN`] observations. Values are in `[-10_000, 10_000)`.
+/// All series share the same length, including during shrinking. Series may
+/// be constant or linearly dependent.
+///
+/// # Panics
+///
+/// Panics unless `min_len` is between one and [`MAX_SAMPLE_LEN`], inclusive.
+pub fn finite_series(min_len: usize) -> impl Strategy<Value = Vec<Vec<f64>>> {
+    assert!(
+        (1..=MAX_SAMPLE_LEN).contains(&min_len),
+        "minimum length must be between one and {MAX_SAMPLE_LEN}"
+    );
+
+    (min_len..=MAX_SAMPLE_LEN)
+        .prop_flat_map(|n| prop::collection::vec(prop::collection::vec(finite_value(), n), 1..=8))
 }
 
 /// Generates a nonconstant sample of bounded finite `f64` values.

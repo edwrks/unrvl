@@ -8,6 +8,8 @@
 /// Inherits [`f64::max`]'s NaN policy: NaN values are ignored when a numeric
 /// value is present, while an all-NaN slice returns NaN.
 ///
+/// For `n` observations, uses `O(n)` time and `O(1)` additional memory.
+///
 /// # Panics
 ///
 /// Panics if the input slice is empty.
@@ -23,6 +25,8 @@ pub fn max_abs(xs: &[f64]) -> f64 {
 ///
 /// Inherits [`f64::min`]'s NaN policy: NaN values are ignored when a numeric
 /// value is present, while an all-NaN slice returns NaN.
+///
+/// For `n` observations, uses `O(n)` time and `O(1)` additional memory.
 ///
 /// # Panics
 ///
@@ -40,6 +44,8 @@ pub fn min_abs(xs: &[f64]) -> f64 {
 /// NaN values are ignored when a numeric value is present. If all values are
 /// NaN, returns the first index. Ties are resolved in favor of the first
 /// occurrence.
+///
+/// For `n` observations, uses `O(n)` time and `O(1)` additional memory.
 ///
 /// # Panics
 ///
@@ -67,6 +73,8 @@ pub fn argmax(xs: &[f64]) -> usize {
 /// NaN, returns the first index. Ties are resolved in favor of the first
 /// occurrence.
 ///
+/// For `n` observations, uses `O(n)` time and `O(1)` additional memory.
+///
 /// # Panics
 ///
 /// Panics if the input slice is empty.
@@ -92,6 +100,8 @@ pub fn argmin(xs: &[f64]) -> usize {
 /// NaN values are ignored when a numeric value is present. If all values are
 /// NaN, returns the first index. Ties are resolved in favor of the first
 /// occurrence.
+///
+/// For `n` observations, uses `O(n)` time and `O(1)` additional memory.
 ///
 /// # Panics
 ///
@@ -121,6 +131,8 @@ pub fn argmax_abs(xs: &[f64]) -> usize {
 /// NaN, returns the first index. Ties are resolved in favor of the first
 /// occurrence.
 ///
+/// For `n` observations, uses `O(n)` time and `O(1)` additional memory.
+///
 /// # Panics
 ///
 /// Panics if the input slice is empty.
@@ -148,6 +160,8 @@ pub fn argmin_abs(xs: &[f64]) -> usize {
 /// Inherits [`f64::min`] and [`f64::max`]'s NaN policy: NaN values are
 /// ignored when a numeric value is present, while an all-NaN slice returns
 /// `(NaN, NaN)`.
+///
+/// For `n` observations, uses `O(n)` time and `O(1)` additional memory.
 ///
 /// # Panics
 ///
