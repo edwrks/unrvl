@@ -11,6 +11,8 @@
 //! values must be finite, and reference probabilities must be unique and
 //! lie in `[0, 1]`.
 
+use super::parsing::{parse_finite, parse_probability, parse_value_fixture};
+
 /// A bundled R quantile dataset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Dataset {
@@ -121,7 +123,6 @@ struct Parser {
 }
 
 impl Parser {
-    const FIXTURE_HEADER: &'static str = "value";
     const REFERENCE_HEADER: &'static str = "case,probability,value";
 
     const fn new(dataset: Dataset) -> Self {
@@ -129,44 +130,10 @@ impl Parser {
     }
 
     fn parse(self) -> Reference {
-        let observations = self.parse_fixture();
+        let observations = parse_value_fixture(self.dataset.fixture(), "quantile fixture");
         let statistics = self.parse_statistics();
 
         Reference { dataset: self.dataset, observations, statistics }
-    }
-
-    fn parse_fixture(&self) -> Vec<f64> {
-        let mut fixture = self.dataset.fixture().lines();
-
-        let header = fixture
-            .next()
-            .expect("quantile fixture should contain a header");
-
-        assert_eq!(
-            header,
-            Self::FIXTURE_HEADER,
-            "quantile fixture CSV header should match the expected schema"
-        );
-
-        let observations: Vec<f64> = fixture
-            .map(|line| {
-                let value: f64 = line
-                    .trim()
-                    .parse()
-                    .expect("fixture values should be numerical");
-
-                assert!(value.is_finite(), "fixture values should be finite");
-
-                value
-            })
-            .collect();
-
-        assert!(
-            !observations.is_empty(),
-            "quantile fixture should contain observations"
-        );
-
-        observations
     }
 
     fn parse_statistics(&self) -> Vec<Statistics> {
@@ -186,39 +153,19 @@ impl Parser {
         let mut statistics = Vec::new();
 
         for line in reference {
-            let mut fields = line.split(',');
-
-            let row_case = fields
-                .next()
-                .expect("quantile reference row should contain a case");
-
-            if row_case != case {
+            let fields: Vec<_> = line.split(',').collect();
+            if fields[0] != case {
                 continue;
             }
 
-            let probability: f64 = fields
-                .next()
-                .expect("quantile reference row should contain a probability")
-                .parse()
-                .expect("probability should be numerical");
-
-            let value: f64 = fields
-                .next()
-                .expect("quantile reference row should contain a value")
-                .parse()
-                .expect("quantile value should be numerical");
-
-            assert!(
-                fields.next().is_none(),
+            assert_eq!(
+                fields.len(),
+                3,
                 "quantile reference row should contain exactly three fields"
             );
 
-            assert!(
-                probability.is_finite() && (0.0..=1.0).contains(&probability),
-                "reference probability should be finite and in [0, 1]"
-            );
-
-            assert!(value.is_finite(), "reference quantile should be finite");
+            let probability = parse_probability(fields[1], "reference probability");
+            let value = parse_finite(fields[2], "reference quantile");
 
             statistics.push(Statistics { probability, value });
         }

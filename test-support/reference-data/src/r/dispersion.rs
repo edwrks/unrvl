@@ -4,6 +4,8 @@
 //! and corresponding [`Statistics`]. Fixtures and reference values are
 //! embedded; loading them does not run R or require network access.
 
+use super::parsing::{parse_finite, parse_usize, parse_value_fixture};
+
 /// A bundled R dispersion dataset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Dataset {
@@ -143,7 +145,6 @@ struct Parser {
 }
 
 impl Parser {
-    const FIXTURE_HEADER: &'static str = "value";
     const REFERENCE_HEADER: &'static str = "case,n,range,iqr,mad,std_dev,cv";
 
     const fn new(dataset: Dataset) -> Self {
@@ -151,7 +152,7 @@ impl Parser {
     }
 
     fn parse(self) -> Reference {
-        let observations = self.parse_fixture();
+        let observations = parse_value_fixture(self.dataset.fixture(), "dispersion fixture");
         let statistics = self.parse_statistics();
 
         assert_eq!(
@@ -161,40 +162,6 @@ impl Parser {
         );
 
         Reference { dataset: self.dataset, observations, statistics }
-    }
-
-    fn parse_fixture(&self) -> Vec<f64> {
-        let mut fixture = self.dataset.fixture().lines();
-
-        let header = fixture
-            .next()
-            .expect("dispersion fixture should contain a header");
-
-        assert_eq!(
-            header,
-            Self::FIXTURE_HEADER,
-            "dispersion fixture CSV header should match the expected schema"
-        );
-
-        let observations: Vec<f64> = fixture
-            .map(|line| {
-                let value: f64 = line
-                    .trim()
-                    .parse()
-                    .expect("fixture values should be numerical");
-
-                assert!(value.is_finite(), "fixture values should be finite");
-
-                value
-            })
-            .collect();
-
-        assert!(
-            !observations.is_empty(),
-            "dispersion fixture should contain observations"
-        );
-
-        observations
     }
 
     fn parse_statistics(&self) -> Statistics {
@@ -219,64 +186,19 @@ impl Parser {
             })
             .expect("dispersion reference data should contain the requested case");
 
-        let mut fields = row.split(',');
-
-        let row_case = fields
-            .next()
-            .expect("dispersion reference row should contain a case");
-
+        let fields: Vec<_> = row.split(',').collect();
         assert_eq!(
-            row_case, case,
-            "dispersion reference row case should match the requested case"
-        );
-
-        let n = fields
-            .next()
-            .expect("dispersion reference row should contain n")
-            .parse()
-            .expect("n should be numerical");
-
-        let range = fields
-            .next()
-            .expect("dispersion reference row should contain range")
-            .parse()
-            .expect("range should be numerical");
-
-        let iqr = fields
-            .next()
-            .expect("dispersion reference row should contain iqr")
-            .parse()
-            .expect("iqr should be numerical");
-
-        let mad = fields
-            .next()
-            .expect("dispersion reference row should contain mad")
-            .parse()
-            .expect("mad should be numerical");
-
-        let std_dev = fields
-            .next()
-            .expect("dispersion reference row should contain std dev")
-            .parse()
-            .expect("std_dev should be numerical");
-
-        let cv = fields
-            .next()
-            .expect("dispersion reference row should contain cv")
-            .parse()
-            .expect("cv should be numerical");
-
-        assert!(
-            fields.next().is_none(),
+            fields.len(),
+            7,
             "dispersion reference row should contain exactly seven fields"
         );
 
-        assert!(
-            [range, iqr, mad, std_dev, cv]
-                .into_iter()
-                .all(f64::is_finite),
-            "dispersion reference statistics should be finite"
-        );
+        let n = parse_usize(fields[1], "reference n");
+        let range = parse_finite(fields[2], "reference range");
+        let iqr = parse_finite(fields[3], "reference iqr");
+        let mad = parse_finite(fields[4], "reference mad");
+        let std_dev = parse_finite(fields[5], "reference std_dev");
+        let cv = parse_finite(fields[6], "reference cv");
 
         Statistics { n, range, iqr, mad, std_dev, cv }
     }

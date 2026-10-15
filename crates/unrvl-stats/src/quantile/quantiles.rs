@@ -7,6 +7,9 @@ use super::internal::{is_valid_probability, is_valid_sample, type7};
 ///
 /// The input slice does not need to be sorted.
 ///
+/// For `n` observations and `q` probabilities, uses `O(n log n + q)` time and
+/// `O(n + q)` additional memory, including the returned results.
+///
 /// Returns one result per requested probability, in the same order. Non-finite
 /// probabilities or probabilities outside `[0.0, 1.0]` produce `NaN` at their
 /// corresponding positions without affecting other results.

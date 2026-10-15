@@ -23,6 +23,8 @@ use crate::internal::deviations::centered_scaled;
 /// numerical error. Rounding remains possible, and observations that are very
 /// small relative to the largest magnitude can underflow during scaling.
 ///
+/// For `n` observations, uses `O(n)` time and `O(1)` additional memory.
+///
 /// # Panics
 ///
 /// Panics if a finite sample contains more than `2^53` observations.

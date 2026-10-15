@@ -33,6 +33,29 @@ case_name <- function(path) {
 }
 
 read_fixture <- function(path, columns, minimum_n = 1L) {
+  values <- read_numeric_fixture(path, minimum_n)
+
+  if (!identical(names(values), columns)) {
+    stop("Invalid columns in ", path, "; expected: ", paste(columns, collapse = ", "))
+  }
+
+  values
+}
+
+read_matrix_fixture <- function(path, minimum_n = 2L) {
+  read_numeric_fixture(path, minimum_n)
+}
+
+read_numeric_fixture <- function(path, minimum_n) {
+  # Reject ragged records before read.csv can infer row names or fill fields.
+  fields <- utils::count.fields(
+    path, sep = ",", quote = "\"", comment.char = "", blank.lines.skip = FALSE
+  )
+
+  if (length(fields) == 0L || anyNA(fields) || fields[1L] < 1L || any(fields != fields[1L])) {
+    stop("Invalid fixture ", path, ": expected a rectangular CSV table")
+  }
+
   values <- tryCatch(
     utils::read.csv(
       path,
@@ -43,17 +66,18 @@ read_fixture <- function(path, columns, minimum_n = 1L) {
       blank.lines.skip = FALSE
     ),
     error = function(error) {
-      stop(
-        "Invalid fixture ", path, ": ", conditionMessage(error))
+      stop("Invalid fixture ", path, ": ", conditionMessage(error))
     }
   )
 
-  if (!identical(names(values), columns)) {
-    stop("Invalid columns in ", path, "; expected: ", paste(columns, collapse = ", "))
+  columns <- names(values)
+  if (length(columns) == 0L || any(!nzchar(trimws(columns))) || anyDuplicated(columns) > 0L) {
+    stop("Invalid columns in ", path, ": names must be nonempty and unique")
   }
 
   if (nrow(values) < minimum_n) {
-    stop("Invalid fixture ", path, ": need at least ", minimum_n, " observations") }
+    stop("Invalid fixture ", path, ": need at least ", minimum_n, " observations")
+  }
 
   for (column in columns) {
     if (!all(is.finite(values[[column]]))) {
@@ -66,7 +90,7 @@ read_fixture <- function(path, columns, minimum_n = 1L) {
 
 checked_reference <- function(row, path) {
   row <- tryCatch(row, error = function(error) {
-      stop( "Cannot compute reference for ", path, ": ", conditionMessage(error))
+      stop("Cannot compute reference for ", path, ": ", conditionMessage(error))
     }
   )
 
@@ -95,4 +119,3 @@ write_reference <- function(rows, filename) {
     fileEncoding = "UTF-8"
   )
 }
-

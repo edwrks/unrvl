@@ -7,6 +7,8 @@
 //! Fixtures and reference values are embedded; loading them does not run R or
 //! require network access.
 
+use super::parsing::{parse_finite, parse_probability, parse_value_fixture};
+
 /// A bundled R empirical distribution dataset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Dataset {
@@ -179,7 +181,6 @@ struct Parser {
 }
 
 impl Parser {
-    const FIXTURE_HEADER: &'static str = "value";
     const EVALUATION_HEADER: &'static str = "case,query,cdf,sf";
     const QUANTILE_HEADER: &'static str = "case,probability,value";
 
@@ -188,46 +189,12 @@ impl Parser {
     }
 
     fn parse(self) -> Reference {
-        let observations = self.parse_fixture();
+        let observations = parse_value_fixture(self.dataset.fixture(), "empirical fixture");
         let evaluations = self.parse_evaluations();
         let quantiles = self.parse_quantiles();
         let statistics = Statistics { evaluations, quantiles };
 
         Reference { dataset: self.dataset, observations, statistics }
-    }
-
-    fn parse_fixture(&self) -> Vec<f64> {
-        let mut fixture = self.dataset.fixture().lines();
-
-        let header = fixture
-            .next()
-            .expect("empirical fixture should contain a header");
-
-        assert_eq!(
-            header,
-            Self::FIXTURE_HEADER,
-            "empirical fixture CSV header should match the expected schema"
-        );
-
-        let observations: Vec<f64> = fixture
-            .map(|line| {
-                let value: f64 = line
-                    .trim()
-                    .parse()
-                    .expect("fixture values should be numerical");
-
-                assert!(value.is_finite(), "fixture values should be finite");
-
-                value
-            })
-            .collect();
-
-        assert!(
-            !observations.is_empty(),
-            "empirical fixture should contain observations"
-        );
-
-        observations
     }
 
     fn parse_evaluations(&self) -> Vec<Evaluation> {
@@ -247,50 +214,20 @@ impl Parser {
         let mut evaluations = Vec::new();
 
         for line in reference {
-            let mut fields = line.split(',');
-
-            let row_case = fields
-                .next()
-                .expect("empirical evaluation row should contain a case");
-
-            if row_case != case {
+            let fields: Vec<_> = line.split(',').collect();
+            if fields[0] != case {
                 continue;
             }
 
-            let query: f64 = fields
-                .next()
-                .expect("empirical evaluation row should contain a query")
-                .parse()
-                .expect("query should be numerical");
-
-            let cdf: f64 = fields
-                .next()
-                .expect("empirical evaluation row should contain an ECDF value")
-                .parse()
-                .expect("ECDF value should be numerical");
-
-            let sf: f64 = fields
-                .next()
-                .expect("empirical evaluation row should contain a survival value")
-                .parse()
-                .expect("survival value should be numerical");
-
-            assert!(
-                fields.next().is_none(),
+            assert_eq!(
+                fields.len(),
+                4,
                 "empirical evaluation row should contain exactly four fields"
             );
 
-            assert!(query.is_finite(), "reference query should be finite");
-
-            assert!(
-                is_probability(cdf),
-                "reference ECDF probability should be finite and in [0, 1]"
-            );
-
-            assert!(
-                is_probability(sf),
-                "reference survival probability should be finite and in [0, 1]"
-            );
+            let query = parse_finite(fields[1], "reference query");
+            let cdf = parse_probability(fields[2], "reference ECDF probability");
+            let sf = parse_probability(fields[3], "reference survival probability");
 
             evaluations.push(Evaluation { query, cdf, sf });
         }
@@ -339,39 +276,19 @@ impl Parser {
         let mut quantiles = Vec::new();
 
         for line in reference {
-            let mut fields = line.split(',');
-
-            let row_case = fields
-                .next()
-                .expect("empirical quantile row should contain a case");
-
-            if row_case != case {
+            let fields: Vec<_> = line.split(',').collect();
+            if fields[0] != case {
                 continue;
             }
 
-            let probability: f64 = fields
-                .next()
-                .expect("empirical quantile row should contain a probability")
-                .parse()
-                .expect("probability should be numerical");
-
-            let value: f64 = fields
-                .next()
-                .expect("empirical quantile row should contain a value")
-                .parse()
-                .expect("quantile value should be numerical");
-
-            assert!(
-                fields.next().is_none(),
+            assert_eq!(
+                fields.len(),
+                3,
                 "empirical quantile row should contain exactly three fields"
             );
 
-            assert!(
-                is_probability(probability),
-                "reference probability should be finite and in [0, 1]"
-            );
-
-            assert!(value.is_finite(), "reference quantile should be finite");
+            let probability = parse_probability(fields[1], "reference probability");
+            let value = parse_finite(fields[2], "reference quantile");
 
             quantiles.push(Quantile { probability, value });
         }
@@ -397,10 +314,6 @@ impl Parser {
 
         quantiles
     }
-}
-
-fn is_probability(value: f64) -> bool {
-    value.is_finite() && (0.0..=1.0).contains(&value)
 }
 
 #[cfg(test)]

@@ -7,7 +7,7 @@ use unrvl_numerics::convert::usize_to_f64;
 ///
 /// Construction validates and sorts the observations once. CDF and survival
 /// queries use binary search; inverse CDF queries select an observation without
-/// interpolation. Queries do not allocate or modify the stored sample.
+/// interpolation. Queries do not allocate.
 ///
 /// ```
 /// use unrvl_stats::distribution::empirical::Ecdf;
@@ -45,7 +45,9 @@ pub enum EcdfError {
 impl Ecdf {
     /// Creates an empirical distribution from a nonempty, finite sample.
     ///
-    /// Copies and sorts the observations.
+    /// Copies and sorts the observations. For `n` observations, uses
+    /// `O(n log n)` time and `O(n)` additional memory, including the retained
+    /// sorted sample.
     ///
     /// # Errors
     ///
@@ -80,6 +82,9 @@ impl Ecdf {
     ///
     /// Includes all observations tied at the query. Negative infinity returns
     /// zero, positive infinity returns one, and NaN returns `NaN`.
+    ///
+    /// Uses `O(log n)` time and `O(1)` additional memory per query, where `n`
+    /// is the number of stored observations.
     #[must_use]
     pub fn cdf(&self, query: f64) -> f64 {
         if query.is_nan() {
@@ -98,6 +103,9 @@ impl Ecdf {
     ///
     /// Computes the exceedance count before division, avoiding subtraction
     /// from a rounded cumulative probability.
+    ///
+    /// Uses `O(log n)` time and `O(1)` additional memory per query, where `n`
+    /// is the number of stored observations.
     #[must_use]
     pub fn sf(&self, query: f64) -> f64 {
         if query.is_nan() {
@@ -123,6 +131,8 @@ impl Ecdf {
     ///
     /// The rank is computed in floating-point arithmetic. Rounding near a
     /// cumulative jump can affect which observation is selected.
+    ///
+    /// Uses `O(1)` time and `O(1)` additional memory per query.
     #[must_use]
     pub fn inverse_cdf(&self, p: f64) -> f64 {
         if !p.is_finite() || !(0.0..=1.0).contains(&p) {

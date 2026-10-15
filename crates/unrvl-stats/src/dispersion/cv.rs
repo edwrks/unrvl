@@ -26,6 +26,8 @@ use crate::internal::deviations::centered_scaled;
 /// round the mean to zero. A mean near zero makes the ratio sensitive to
 /// rounding; the result can overflow to signed infinity.
 ///
+/// For `n` observations, uses `O(n)` time and `O(1)` additional memory.
+///
 /// # Panics
 ///
 /// Panics if a finite sample contains more than `2^53` observations.

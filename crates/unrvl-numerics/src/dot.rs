@@ -11,6 +11,9 @@ use crate::summation::NeumaierSum;
 /// can produce a non-finite result, even when the mathematical dot product
 /// is finite.
 ///
+/// Uses `O(n)` time and `O(1)` additional memory, where `n` is the number of
+/// paired observations.
+///
 /// # Panics
 ///
 /// Panics if `xs` and `ys` have different lengths.

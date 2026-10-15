@@ -19,7 +19,29 @@ unrvl-numerics.workspace = true
 reference-data.workspace = true
 test-utils.workspace = true
 
+criterion.workspace = true
 proptest.workspace = true
+rand.workspace = true
 
 [lints]
 workspace = true
+
+[[bench]]
+name = "moments"
+harness = false
+
+[[bench]]
+name = "dispersion"
+harness = false
+
+[[bench]]
+name = "quantiles"
+harness = false
+
+[[bench]]
+name = "empirical"
+harness = false
+
+[[bench]]
+name = "association"
+harness = false

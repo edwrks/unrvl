@@ -21,6 +21,8 @@ use crate::internal::deviations::power_of_two_unit;
 /// remains possible, and scaling can lose observations that are very small
 /// relative to the largest magnitude.
 ///
+/// For `n` observations, uses `O(n)` time and `O(1)` additional memory.
+///
 /// # Panics
 ///
 /// Panics if the slice length exceeds `2^53`, unless the input is a finite

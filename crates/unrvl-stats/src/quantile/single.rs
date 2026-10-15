@@ -9,8 +9,8 @@ use super::internal::{is_valid_probability, is_valid_sample, type7};
 /// Probabilities zero and one return the minimum and maximum, respectively. A
 /// single observation is returned for every valid probability.
 ///
-/// The input slice does not need to be sorted. The observations are copied and
-/// sorted before evaluation.
+/// The input slice does not need to be sorted. Copies and sorts the sample.
+/// For `n` observations, uses `O(n log n)` time and `O(n)` additional memory.
 ///
 /// Returns `NaN` if `xs` is empty, any observation is non-finite, or `p` is
 /// non-finite or outside `[0.0, 1.0]`.

@@ -6,7 +6,9 @@
 //! Loading references does not invoke R or Docker. Undefined-input policies
 //! and floating-point stress cases are tested separately in Rust.
 
+pub mod association;
 pub mod dispersion;
 pub mod empirical;
 pub mod moments;
+mod parsing;
 pub mod quantiles;

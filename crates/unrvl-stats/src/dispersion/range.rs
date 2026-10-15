@@ -8,6 +8,8 @@ use unrvl_numerics::extrema::min_max;
 ///
 /// The difference can overflow to positive infinity even when all observations
 /// are finite.
+///
+/// For `n` observations, uses `O(n)` time and `O(1)` additional memory.
 #[must_use]
 pub fn range(xs: &[f64]) -> f64 {
     if xs.is_empty() || xs.iter().any(|x| !x.is_finite()) {

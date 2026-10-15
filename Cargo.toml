@@ -46,5 +46,7 @@ unrvl-timeseries = { version = "0.0.2", path = "crates/unrvl-timeseries" }
 reference-data = { path = "test-support/reference-data" }
 test-utils = { path = "test-support/test-utils" }
 
+criterion = "0.8"
 proptest = "1"
+rand = "0.9"
 thiserror = "2"

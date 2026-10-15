@@ -22,6 +22,8 @@
 ///
 /// Use [`NeumaierSum::total`] to retrieve the accumulated result.
 ///
+/// Uses `O(1)` storage and `O(1)` work per added value.
+///
 /// # Examples
 ///
 /// Adding values individually:
@@ -223,6 +225,9 @@ pub trait NeumaierSumExt: Iterator + Sized {
     ///
     /// Returns zero for an empty iterator. See [`NeumaierSum`] for the
     /// numerical behavior of accumulation.
+    ///
+    /// For `n` yielded values, uses `O(n)` accumulation work and `O(1)`
+    /// additional memory, excluding the iterator's own computation and storage.
     ///
     /// # Examples
     ///

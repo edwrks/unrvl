@@ -1,21 +1,15 @@
-use reference_data::nist::univariate::Dataset;
-use reference_data::r::{self};
-use unrvl::stats::moments;
+use reference_data::r::association::matrix;
+use unrvl::stats::association::{correlation_matrix, covariance_matrix};
 
 fn main() {
-    let lew = Dataset::Lew.load();
-    println!("{lew:?}");
-
-    let obs = lew.statistics().n();
-    println!("{obs:?}");
-
-    let mean = moments::mean(lew.observations());
-    println!("Mean: {mean:?}");
-
-    let r = r::moments::Dataset::Baseline.load();
-    let r_mean = r.statistics().mean();
-    println!("r_ref: {r:?}");
-
-    let mean = moments::mean(r.observations());
-    println!("ref: {r_mean}, ours: {mean}");
+    let data = matrix::Dataset::Baseline.load();
+    println!("Variables: {:?}", data.variables());
+    println!(
+        "Covariance: {:?}",
+        covariance_matrix(data.series()).unwrap()
+    );
+    println!(
+        "Correlation: {:?}",
+        correlation_matrix(data.series()).unwrap()
+    );
 }

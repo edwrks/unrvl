@@ -1,3 +1,4 @@
+mod association;
 mod dispersion;
 mod empirical;
 mod moments;
