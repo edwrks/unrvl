@@ -8,6 +8,7 @@ cargo bench -p unrvl-stats --bench dispersion
 cargo bench -p unrvl-stats --bench quantiles
 cargo bench -p unrvl-stats --bench empirical
 cargo bench -p unrvl-stats --bench association
+cargo bench -p unrvl-stats --bench regression
 ```
 
 Filter a benchmark group when only one workload is needed:
@@ -34,6 +35,7 @@ cargo bench -p unrvl-stats -- --test
 | `quantiles`   | Median, a single Type 7 quantile, seven separate queries, and the same seven batched queries  |
 | `empirical`   | ECDF construction, then CDF, survival, and inverse-CDF queries on an already constructed ECDF |
 | `association` | Covariance, Pearson, Spearman, Kendall tau-b, covariance matrices, and correlation matrices   |
+| `regression`  | Simple linear fit, residual evaluation, and scalar prediction on an already fitted model      |
 
 ## Input data
 
@@ -47,8 +49,8 @@ All benchmark targets use these two cases. Each input dataset starts a seeded
 giving different series without cloning or shuffling. The offset cases use the
 same underlying draws for comparison.
 
-Input generation and ECDF construction for query benchmarks happen outside the
-timed loops.
+Input generation, ECDF construction for query benchmarks, and regression fitting
+for prediction/residual benchmarks happen outside the timed loops.
 
 ECDF queries include repeated single queries and batches of nine varied CDF or
 survival queries covering existing observations, intermediate values, and both
@@ -75,6 +77,7 @@ Criterion's elements-per-second figure uses these units:
 | ------------------------------------------------- | --------------------------------------------------------- |
 | Scalar statistics, including multi-call workloads | `n` input values                                          |
 | Paired association                                | `n` paired observation positions, each containing x and y |
+| Regression fit and residuals                      | `n` paired observation positions, each containing x and y |
 | Matrix association                                | `n * p` input values across `p` series                    |
 | ECDF construction                                 | `n` input values                                          |
 | Single ECDF query                                 | One query                                                 |

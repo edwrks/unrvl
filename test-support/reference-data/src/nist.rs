@@ -3,4 +3,5 @@
 //!
 //! [NIST Statistical Reference Datasets]: https://www.itl.nist.gov/div898/strd/general/dataarchive.html
 
+pub mod linear_regression;
 pub mod univariate;

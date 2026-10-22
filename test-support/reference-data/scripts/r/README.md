@@ -20,16 +20,17 @@ Paired association and regression use exactly `x,y`. For regression, `x` is the
 predictor and `y` is the response. Association matrix fixtures use one named
 column per variable and one row per observation.
 
-| Family / output           | Columns after `case`                        |
-| ------------------------- | ------------------------------------------- |
-| `moments.csv`             | `n,mean,variance,skewness,excess_kurtosis`  |
-| `dispersion.csv`          | `n,range,iqr,mad,std_dev,cv`                |
-| `quantiles.csv`           | `probability,value`                         |
-| `empirical.csv`           | `query,cdf,sf`                              |
-| `empirical-quantiles.csv` | `probability,value`                         |
-| `association.csv`         | `n,covariance,pearson,spearman,kendall`     |
-| `association-matrix.csv`  | `n,row,column,covariance,correlation`       |
-| `regression.csv`          | `n,intercept,slope,r_squared`               |
+| Family / output               | Columns after `case`                       |
+| ----------------------------- | ------------------------------------------ |
+| `moments.csv`                 | `n,mean,variance,skewness,excess_kurtosis` |
+| `dispersion.csv`              | `n,range,iqr,mad,std_dev,cv`               |
+| `quantiles.csv`               | `probability,value`                        |
+| `empirical.csv`               | `query,cdf,sf`                             |
+| `empirical-quantiles.csv`     | `probability,value`                        |
+| `association.csv`             | `n,covariance,pearson,spearman,kendall`    |
+| `association-matrix.csv`      | `n,row,column,covariance,correlation`      |
+| `regression.csv`              | `n,intercept,slope,r_squared`              |
+| `regression-observations.csv` | `observation,prediction,residual`          |
 
 - Variance, standard deviation, and covariance use the sample denominator
   `n - 1`.
@@ -68,6 +69,19 @@ probability labels retain their declared decimal spelling. Files use UTF-8, LF
 endings, unquoted fields, stable headers, no row numbers, and sorted cases (then
 ascending probability for quantile tables, query for `empirical.csv`, or row
 then column for `association-matrix.csv`).
+
+## Simple Linear Regression
+
+`regression.R` uses the five paired fixtures and default `stats::lm(y ~ x)` with
+an intercept. `regression.csv` stores fit coefficients, R², and pair counts.
+`regression-observations.csv` stores predictions from `stats::predict` at the
+fixture predictors and residuals from `stats::residuals` together in each row.
+
+The per-observation table contains 29 rows, sorted by case and then the
+zero-based `observation` index in original fixture order. Perfect-line fixtures
+may produce small floating-point residuals and warnings from `summary.lm`; all
+committed reference values are finite. Constant responses, constant predictors,
+invalid inputs, and extreme scales are covered by Rust tests.
 
 ## Association Fixtures and Matrices
 

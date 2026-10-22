@@ -1,7 +1,7 @@
 use thiserror::Error;
 use unrvl_numerics::convert::usize_to_f64;
 
-use crate::internal::deviations::centered_scaled;
+use crate::internal::deviations::CenteredSample;
 
 mod correlation;
 mod covariance;
@@ -63,9 +63,12 @@ fn prepared_series<S: AsRef<[f64]>>(series: &[S]) -> Result<Vec<PreparedSeries>,
     Ok(series
         .iter()
         .map(|values| {
-            let (unit, deviations) =
-                centered_scaled(values.as_ref()).expect("should be nonempty and finite");
-            PreparedSeries { unit, deviations: deviations.collect() }
+            let sample =
+                CenteredSample::new(values.as_ref()).expect("should be nonempty and finite");
+            PreparedSeries {
+                unit: sample.centering().unit(),
+                deviations: sample.deviations().collect(),
+            }
         })
         .collect())
 }

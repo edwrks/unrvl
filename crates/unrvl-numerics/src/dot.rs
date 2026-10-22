@@ -35,11 +35,7 @@ pub fn compensated_dot(xs: &[f64], ys: &[f64]) -> f64 {
     let mut dot = NeumaierSum::new();
 
     for (&x, &y) in xs.iter().zip(ys) {
-        let p = x * y;
-        let e = x.mul_add(y, -p);
-
-        dot.add(p);
-        dot.add(e);
+        dot.add_product(x, y);
     }
 
     dot.total()

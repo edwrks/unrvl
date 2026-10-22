@@ -12,6 +12,8 @@
 /// A new empty accumulator is created with [`NeumaierSum::new`].
 ///
 /// Values can be added individually using [`NeumaierSum::add`], `+=`, or `+`.
+/// Use [`NeumaierSum::add_product`] to also compensate multiplication rounding
+/// when accumulating products.
 ///
 /// An existing accumulator can be extended by an iterator using
 /// [`Extend::extend`].
@@ -120,6 +122,32 @@ impl NeumaierSum {
         }
 
         self.sum = t;
+    }
+
+    /// Accumulates `x · y`, compensating multiplication and summation rounding.
+    ///
+    /// Adds the rounded product and its fused multiply-add residual separately.
+    /// Intended for finite operands and products; overflow can produce a
+    /// non-finite total, and underflow can lose a product's rounding residual.
+    /// Uses `O(1)` time and additional memory.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use unrvl_numerics::summation::NeumaierSum;
+    /// let delta = 2.0_f64.powi(-27);
+    ///
+    /// let mut sum = NeumaierSum::new();
+    /// sum.add_product(1.0 + delta, 1.0 - delta);
+    /// sum.add_product(-1.0, 1.0);
+    ///
+    /// assert_eq!(sum.total(), -delta * delta);
+    /// ```
+    #[inline]
+    pub fn add_product(&mut self, x: f64, y: f64) {
+        let product = x * y;
+        self.add(product);
+        self.add(x.mul_add(y, -product));
     }
 
     /// Returns the accumulated sum including its rounding compensation.
@@ -403,6 +431,20 @@ mod tests {
 
         let tol = Tolerance::new(1e-16, 0.0);
         assert_approx_eq(xs.iter().neumaier_sum(), 1.0, tol);
+    }
+
+    #[test]
+    fn add_product_preserves_product_and_sum_rounding_corrections() {
+        let delta = 2.0_f64.powi(-27);
+
+        let mut sum = NeumaierSum::new();
+        sum.add(2.0_f64.powi(53));
+        sum.add_product(0.25, 1.0);
+        sum.add(-2.0_f64.powi(53));
+        sum.add_product(1.0 + delta, 1.0 - delta);
+        sum.add_product(-1.0, 1.0);
+
+        assert_eq!(sum.total(), 0.25 - 2.0_f64.powi(-54));
     }
 
     #[test]

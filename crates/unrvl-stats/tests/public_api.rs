@@ -1,9 +1,22 @@
 use unrvl_stats::distribution::empirical::Ecdf;
 use unrvl_stats::prelude::*;
+use unrvl_stats::regression::simple_linear::SimpleLinearRegression;
 use unrvl_stats::{association, dispersion, moments, quantile};
 
 const XS: &[f64] = &[1.0, 2.0, 3.0, 4.0, 5.0];
 const YS: &[f64] = &[2.0, 3.0, 4.0, 5.0, 6.0];
+
+#[test]
+fn simple_linear_regression_is_available_externally() {
+    let model = SimpleLinearRegression::fit(XS, YS).unwrap();
+
+    let _ = model.slope();
+    let _ = model.intercept();
+    let _ = model.r_squared();
+    let _ = model.observation_count();
+    let _ = model.predict(1.0);
+    let _ = model.residuals(XS, YS).unwrap();
+}
 
 #[test]
 fn association_functions_and_extension_methods_are_available_externally() {

@@ -1,7 +1,8 @@
 use unrvl_numerics::convert::usize_to_f64;
+use unrvl_numerics::scaling::{binary_exponent, scale_power_of_two};
 use unrvl_numerics::summation::NeumaierSum;
 
-use crate::internal::deviations::centered_scaled;
+use crate::internal::deviations::CenteredSample;
 
 /// Returns the sample covariance of paired observations.
 ///
@@ -47,42 +48,34 @@ pub fn covariance(xs: &[f64], ys: &[f64]) -> f64 {
         return f64::NAN;
     }
 
-    let Some((x_unit, x_deviations)) = centered_scaled(xs) else {
+    let Some(x_sample) = CenteredSample::new(xs) else {
         return f64::NAN;
     };
 
-    let Some((y_unit, y_deviations)) = centered_scaled(ys) else {
+    let Some(y_sample) = CenteredSample::new(ys) else {
         return f64::NAN;
     };
 
     let mut sum = NeumaierSum::new();
-    for (x, y) in x_deviations.zip(y_deviations) {
-        let product = x * y;
-        sum.add(product);
-        sum.add(x.mul_add(y, -product));
+    for (x, y) in x_sample.deviations().zip(y_sample.deviations()) {
+        sum.add_product(x, y);
     }
 
     let scaled_covariance = sum.total() / usize_to_f64(n - 1);
-    restore_units(scaled_covariance, x_unit, y_unit)
+    restore_units(
+        scaled_covariance,
+        x_sample.centering().unit(),
+        y_sample.centering().unit(),
+    )
 }
 
 /// Restores covariance units from two positive, finite power-of-two scales.
 /// Shared by scalar and matrix covariance to preserve extreme-scale handling.
 pub(super) fn restore_units(scaled_covariance: f64, x_unit: f64, y_unit: f64) -> f64 {
-    let scale = x_unit * y_unit;
+    let x_exponent = binary_exponent(x_unit).expect("positive finite scaling unit");
+    let y_exponent = binary_exponent(y_unit).expect("positive finite scaling unit");
 
-    // A representable product of power-of-two units is exact, even when
-    // subnormal. Combining the units first also handles opposing scales.
-    if scale.is_finite() && scale != 0.0 {
-        scaled_covariance * scale
-    } else if scale.is_infinite() {
-        // The units overflow together, but a small covariance may still fit.
-        (scaled_covariance * x_unit.min(y_unit)) * x_unit.max(y_unit)
-    } else {
-        // The product of the units underflowed to zero, but the covariance may
-        // still round to a nonzero subnormal. Apply the larger unit first.
-        (scaled_covariance * x_unit.max(y_unit)) * x_unit.min(y_unit)
-    }
+    scale_power_of_two(scaled_covariance, x_exponent + y_exponent)
 }
 
 #[cfg(test)]

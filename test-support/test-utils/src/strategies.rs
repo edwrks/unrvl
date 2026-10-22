@@ -1,4 +1,4 @@
-//! Proptest strategies for bounded numerical inputs.
+//! Proptest strategies for numerical inputs.
 //!
 //! Provides finite values, samples, paired samples, aligned series, constant
 //! and nonconstant samples, and scaling factors for numerical property tests.
@@ -8,11 +8,11 @@
 //! Powers-of-two scales help limit additional rounding during scaling
 //! transformations.
 //!
-//! These strategies do not cover every `f64` value. Test NaN, infinities,
-//! empty samples, and extreme magnitudes explicitly where the API requires
-//! defined behavior for them.
+//! Generated inputs do not guarantee coverage of any particular boundary.
+//! Test NaN, infinities, empty samples, and important extreme magnitudes
+//! explicitly where the API requires defined behavior for them.
 
-use proptest::prelude::prop;
+use proptest::prelude::{any, prop};
 use proptest::strategy::Strategy;
 
 /// Maximum number of observations generated for a sample.
@@ -36,7 +36,7 @@ pub fn finite_sample(min_len: usize) -> impl Strategy<Value = Vec<f64>> {
         "minimum length must be between one and {MAX_SAMPLE_LEN}"
     );
 
-    prop::collection::vec(finite_value(), min_len..=MAX_SAMPLE_LEN)
+    prop::collection::vec(bounded_finite_value(), min_len..=MAX_SAMPLE_LEN)
 }
 
 /// Generates two non-empty, equal-length samples of bounded finite `f64`
@@ -56,8 +56,11 @@ pub fn finite_paired_samples(min_len: usize) -> impl Strategy<Value = (Vec<f64>,
         "minimum length must be between one and {MAX_SAMPLE_LEN}"
     );
 
-    prop::collection::vec((finite_value(), finite_value()), min_len..=MAX_SAMPLE_LEN)
-        .prop_map(|pairs| pairs.into_iter().unzip())
+    prop::collection::vec(
+        (bounded_finite_value(), bounded_finite_value()),
+        min_len..=MAX_SAMPLE_LEN,
+    )
+    .prop_map(|pairs| pairs.into_iter().unzip())
 }
 
 /// Generates aligned variable series of bounded finite `f64` values.
@@ -76,8 +79,9 @@ pub fn finite_series(min_len: usize) -> impl Strategy<Value = Vec<Vec<f64>>> {
         "minimum length must be between one and {MAX_SAMPLE_LEN}"
     );
 
-    (min_len..=MAX_SAMPLE_LEN)
-        .prop_flat_map(|n| prop::collection::vec(prop::collection::vec(finite_value(), n), 1..=8))
+    (min_len..=MAX_SAMPLE_LEN).prop_flat_map(|n| {
+        prop::collection::vec(prop::collection::vec(bounded_finite_value(), n), 1..=8)
+    })
 }
 
 /// Generates a nonconstant sample of bounded finite `f64` values.
@@ -126,7 +130,7 @@ pub fn constant_sample(min_len: usize) -> impl Strategy<Value = Vec<f64>> {
         "minimum length must be between one and {MAX_SAMPLE_LEN}",
     );
 
-    (finite_value(), min_len..=MAX_SAMPLE_LEN).prop_map(|(value, len)| vec![value; len])
+    (bounded_finite_value(), min_len..=MAX_SAMPLE_LEN).prop_map(|(value, len)| vec![value; len])
 }
 
 /// Generates a nonconstant sample and an exactly representable translation.
@@ -159,10 +163,19 @@ pub fn exact_translation_case(min_len: usize) -> impl Strategy<Value = (Vec<f64>
     })
 }
 
+/// Generates finite `f64` values across the full representable range.
+///
+/// Includes signed zeros, subnormals, and normal values; excludes NaN and
+/// infinities. Use [`bounded_finite_value`] when moderate magnitudes are
+/// needed.
+pub fn finite_value() -> impl Strategy<Value = f64> {
+    any::<f64>()
+}
+
 /// Generates bounded finite `f64` values.
 ///
 /// Values are generated in the range `[-10_000, 10_000)`.
-pub fn finite_value() -> impl Strategy<Value = f64> {
+pub fn bounded_finite_value() -> impl Strategy<Value = f64> {
     -10_000.0..10_000.0
 }
 

@@ -5,4 +5,5 @@ pub mod convert;
 pub mod dot;
 pub mod extrema;
 pub mod prelude;
+pub mod scaling;
 pub mod summation;

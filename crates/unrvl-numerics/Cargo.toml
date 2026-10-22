@@ -15,6 +15,7 @@ readme = "README.md"
 
 [dev-dependencies]
 criterion.workspace = true
+proptest.workspace = true
 rand.workspace = true
 test-utils.workspace = true
 
@@ -31,4 +32,8 @@ harness = false
 
 [[bench]]
 name = "extrema"
+harness = false
+
+[[bench]]
+name = "scaling"
 harness = false

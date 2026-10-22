@@ -1,7 +1,7 @@
 use unrvl_numerics::convert::usize_to_f64;
 use unrvl_numerics::summation::NeumaierSumExt;
 
-use crate::internal::deviations::centered_scaled;
+use crate::internal::deviations::CenteredSample;
 
 /// Returns the sample standard deviation using Bessel's correction.
 ///
@@ -35,11 +35,12 @@ pub fn std_dev(xs: &[f64]) -> f64 {
         return f64::NAN;
     }
 
-    let Some((unit, deviations)) = centered_scaled(xs) else {
+    let Some(sample) = CenteredSample::new(xs) else {
         return f64::NAN;
     };
 
-    let sum_u2 = deviations.map(|d| d * d).neumaier_sum();
+    let unit = sample.centering().unit();
+    let sum_u2 = sample.deviations().map(|d| d * d).neumaier_sum();
     let scaled_variance = sum_u2 / usize_to_f64(n - 1);
 
     scaled_variance.sqrt() * unit
