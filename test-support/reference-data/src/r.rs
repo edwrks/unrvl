@@ -12,3 +12,4 @@ pub mod empirical;
 pub mod moments;
 mod parsing;
 pub mod quantiles;
+pub mod regression;

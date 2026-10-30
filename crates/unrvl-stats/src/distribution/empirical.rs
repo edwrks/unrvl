@@ -164,7 +164,8 @@ impl Ecdf {
 mod tests {
     use proptest::prelude::*;
     use test_utils::strategies::{
-        constant_sample, finite_sample, finite_value, positive_power_of_two_scale, probability,
+        bounded_finite_value, constant_sample, finite_sample, positive_power_of_two_scale,
+        probability,
     };
 
     use super::*;
@@ -319,7 +320,7 @@ mod tests {
             #[test]
             fn matches_direct_counts(
                 xs in finite_sample(1),
-                query in finite_value(),
+                query in bounded_finite_value(),
             ) {
                 let distribution = Ecdf::new(&xs).unwrap();
                 let count = xs.iter().filter(|&&x| x <= query).count();
@@ -332,7 +333,7 @@ mod tests {
             #[test]
             fn probability_is_bounded(
                 xs in finite_sample(1),
-                query in finite_value(),
+                query in bounded_finite_value(),
             ) {
                 let distribution = Ecdf::new(&xs).unwrap();
                 let result = distribution.cdf(query);
@@ -343,8 +344,8 @@ mod tests {
             #[test]
             fn is_nondecreasing(
                 xs in finite_sample(1),
-                q1 in finite_value(),
-                q2 in finite_value(),
+                q1 in bounded_finite_value(),
+                q2 in bounded_finite_value(),
             ) {
                 let distribution = Ecdf::new(&xs).unwrap();
                 let lower = q1.min(q2);
@@ -358,7 +359,7 @@ mod tests {
             #[test]
             fn is_invariant_to_input_order(
                 xs in finite_sample(1),
-                query in finite_value(),
+                query in bounded_finite_value(),
             ) {
                 let original = Ecdf::new(&xs).unwrap();
                 let mut reversed = xs;
@@ -374,7 +375,7 @@ mod tests {
             #[test]
             fn positive_power_of_two_scaling_preserves_probability(
                 xs in finite_sample(1),
-                query in finite_value(),
+                query in bounded_finite_value(),
                 scale in positive_power_of_two_scale(),
             ) {
                 let original = Ecdf::new(&xs).unwrap();
@@ -392,7 +393,7 @@ mod tests {
             #[test]
             fn repeated_observations_preserve_probability(
                 xs in finite_sample(1),
-                query in finite_value(),
+                query in bounded_finite_value(),
             ) {
                 let original = Ecdf::new(&xs).unwrap();
                 let repeated_sample = xs.repeat(2);
@@ -518,7 +519,7 @@ mod tests {
             #[test]
             fn matches_direct_counts(
                 xs in finite_sample(1),
-                query in finite_value(),
+                query in bounded_finite_value(),
             ) {
                 let distribution = Ecdf::new(&xs).unwrap();
                 let count = xs.iter().filter(|&&x| x > query).count();
@@ -531,7 +532,7 @@ mod tests {
             #[test]
             fn probability_is_bounded(
                 xs in finite_sample(1),
-                query in finite_value(),
+                query in bounded_finite_value(),
             ) {
                 let distribution = Ecdf::new(&xs).unwrap();
                 let result = distribution.sf(query);
@@ -542,8 +543,8 @@ mod tests {
             #[test]
             fn is_nonincreasing(
                 xs in finite_sample(1),
-                q1 in finite_value(),
-                q2 in finite_value(),
+                q1 in bounded_finite_value(),
+                q2 in bounded_finite_value(),
             ) {
                 let distribution = Ecdf::new(&xs).unwrap();
                 let lower = q1.min(q2);
@@ -557,7 +558,7 @@ mod tests {
             #[test]
             fn is_invariant_to_input_order(
                 xs in finite_sample(1),
-                query in finite_value(),
+                query in bounded_finite_value(),
             ) {
                 let original = Ecdf::new(&xs).unwrap();
                 let mut reversed = xs;
@@ -574,7 +575,7 @@ mod tests {
             #[test]
             fn positive_power_of_two_scaling_preserves_probability(
                 xs in finite_sample(1),
-                query in finite_value(),
+                query in bounded_finite_value(),
                 scale in positive_power_of_two_scale(),
             ) {
                 let original = Ecdf::new(&xs).unwrap();
@@ -590,7 +591,7 @@ mod tests {
             #[test]
             fn repeated_observations_preserve_probability(
                 xs in finite_sample(1),
-                query in finite_value(),
+                query in bounded_finite_value(),
             ) {
                 let original = Ecdf::new(&xs).unwrap();
                 let repeated_sample = xs.repeat(2);
@@ -604,7 +605,7 @@ mod tests {
             #[test]
             fn complements_cdf_within_rounding_error(
                 xs in finite_sample(1),
-                query in finite_value(),
+                query in bounded_finite_value(),
             ) {
                 let distribution = Ecdf::new(&xs).unwrap();
                 let cumulative = distribution.cdf(query);

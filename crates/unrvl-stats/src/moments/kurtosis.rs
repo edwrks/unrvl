@@ -1,7 +1,7 @@
 use unrvl_numerics::convert::usize_to_f64;
 use unrvl_numerics::summation::NeumaierSum;
 
-use crate::internal::deviations::centered_scaled;
+use crate::internal::deviations::CenteredSample;
 
 /// Returns the bias-corrected sample excess kurtosis G2 (Joanes & Gill 1998
 /// type 2).
@@ -36,14 +36,14 @@ pub fn excess_kurtosis(xs: &[f64]) -> f64 {
         return f64::NAN;
     }
 
-    let Some((_, deviations)) = centered_scaled(xs) else {
+    let Some(sample) = CenteredSample::new(xs) else {
         return f64::NAN;
     };
 
     let mut sum_u2 = NeumaierSum::new();
     let mut sum_u4 = NeumaierSum::new();
 
-    for u in deviations {
+    for u in sample.deviations() {
         let u2 = u * u;
 
         sum_u2 += u2;

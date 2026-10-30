@@ -1,7 +1,6 @@
 use unrvl_numerics::convert::usize_to_f64;
 use unrvl_numerics::prelude::*;
-
-use crate::internal::deviations::power_of_two_unit;
+use unrvl_numerics::scaling::power_of_two_unit;
 
 /// Returns the arithmetic mean of `xs`.
 ///

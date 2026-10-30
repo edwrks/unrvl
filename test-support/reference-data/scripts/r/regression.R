@@ -1,20 +1,35 @@
 generate_regression <- function() {
-  rows <- list()
+  fit_rows <- list()
+  observation_rows <- list()
+
   for (path in fixture_files("regression")) {
     case <- case_name(path)
     fixture <- read_fixture(path, c("x", "y"), minimum_n = 2L)
-    # Use lm's defaults for every fixture, without centering or fallbacks.
+
+    # Fit y as a straight line in x, including an intercept, using R's defaults.
     fit <- stats::lm(y ~ x, data = fixture)
     coefficients <- stats::coef(fit)
-    rows[[case]] <- checked_reference(data.frame(
+
+    # One row per fixture describes the fitted line and its overall fit.
+    fit_rows[[case]] <- checked_reference(data.frame(
       case = case,
       n = nrow(fixture),
       intercept = coefficients[["(Intercept)"]],
-      # x is the predictor and y the response; the x coefficient is slope/beta.
       slope = coefficients[["x"]],
       r_squared = summary(fit)$r.squared
     ), path)
+
+    # One row per observation keeps its prediction and residual together.
+    # Subtract one from R's row positions to match Rust's zero-based indices.
+    observation_rows[[case]] <- checked_reference(data.frame(
+      case = case,
+      observation = seq_len(nrow(fixture)) - 1L,
+      prediction = as.numeric(stats::predict(fit, newdata = fixture)),
+      residual = as.numeric(stats::residuals(fit))
+    ), path)
   }
 
-  write_reference(do.call(rbind, rows), "regression.csv")
+  # Stack the cases into one table of fits and one table of observations.
+  write_reference(do.call(rbind, fit_rows), "regression.csv")
+  write_reference(do.call(rbind, observation_rows), "regression-observations.csv")
 }

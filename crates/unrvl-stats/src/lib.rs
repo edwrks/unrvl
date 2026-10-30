@@ -8,3 +8,4 @@ mod internal;
 pub mod moments;
 pub mod prelude;
 pub mod quantile;
+pub mod regression;

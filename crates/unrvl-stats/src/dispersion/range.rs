@@ -26,7 +26,7 @@ mod tests {
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq};
     use test_utils::strategies::{
-        constant_sample, exact_translation_case, finite_sample, finite_value,
+        bounded_finite_value, constant_sample, exact_translation_case, finite_sample,
         positive_power_of_two_scale,
     };
 
@@ -253,7 +253,7 @@ mod tests {
         #[test]
         fn adding_an_observation_cannot_decrease_range(
             mut sample in finite_sample(1),
-            value in finite_value(),
+            value in bounded_finite_value(),
         ) {
             let original = range(&sample);
             sample.push(value);

@@ -1,6 +1,6 @@
 use unrvl_numerics::summation::NeumaierSum;
 
-use crate::internal::deviations::centered_scaled;
+use crate::internal::deviations::CenteredSample;
 
 /// Returns the Pearson correlation of paired observations.
 ///
@@ -47,11 +47,11 @@ pub fn pearson(xs: &[f64], ys: &[f64]) -> f64 {
         return f64::NAN;
     }
 
-    let Some((_, x_deviations)) = centered_scaled(xs) else {
+    let Some(x_sample) = CenteredSample::new(xs) else {
         return f64::NAN;
     };
 
-    let Some((_, y_deviations)) = centered_scaled(ys) else {
+    let Some(y_sample) = CenteredSample::new(ys) else {
         return f64::NAN;
     };
 
@@ -59,18 +59,10 @@ pub fn pearson(xs: &[f64], ys: &[f64]) -> f64 {
     let mut sum_x2 = NeumaierSum::new();
     let mut sum_y2 = NeumaierSum::new();
 
-    for (x, y) in x_deviations.zip(y_deviations) {
-        let xy = x * y;
-        dot.add(xy);
-        dot.add(x.mul_add(y, -xy));
-
-        let xx = x * x;
-        sum_x2.add(xx);
-        sum_x2.add(x.mul_add(x, -xx));
-
-        let yy = y * y;
-        sum_y2.add(yy);
-        sum_y2.add(y.mul_add(y, -yy));
+    for (x, y) in x_sample.deviations().zip(y_sample.deviations()) {
+        dot.add_product(x, y);
+        sum_x2.add_product(x, x);
+        sum_y2.add_product(y, y);
     }
 
     let sum_x2 = sum_x2.total();
