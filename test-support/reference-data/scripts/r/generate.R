@@ -8,6 +8,7 @@ source("quantiles.R")
 source("empirical.R")
 source("association.R")
 source("regression.R")
+source("transform.R")
 
 check_environment()
 dir.create("../../data/r", recursive = TRUE, showWarnings = FALSE)
@@ -18,6 +19,7 @@ generate_empirical()
 generate_association()
 generate_association_matrix()
 generate_regression()
+generate_transform()
 
 packages <- sort(names(renv::lockfile_read("renv.lock")$Packages), method = "radix")
 write_reference(data.frame(

@@ -19,7 +19,8 @@ data/
 │   ├── empirical/
 │   ├── association/
 │   ├── association-matrix/
-│   └── regression/
+│   ├── regression/
+│   └── transform/
 ├── nist/
 │   ├── linear-regression/
 │   └── univariate/
@@ -33,6 +34,7 @@ data/
     ├── association-matrix.csv
     ├── regression.csv
     ├── regression-observations.csv
+    ├── transform.csv
     └── versions.csv
 ```
 
@@ -46,19 +48,20 @@ with `x` the predictor and `y` the response for regression (`y ~ x`). Files
 contain small hand-authored observations. Deliberate copies across families keep
 each corpus independent and easy to inspect.
 
-`association-matrix/` contains rectangular numeric tables with one named
-column per variable and one row per aligned observation. Variable names must
-be nonempty and unique; header order defines the zero-based variable indices
-in `r/association-matrix.csv`. That output contains every sample-covariance
-and Pearson-correlation matrix entry, ordered by case, row, then column.
+`association-matrix/` contains rectangular numeric tables with one named column
+per variable and one row per aligned observation. Variable names must be
+nonempty and unique; header order defines the zero-based variable indices in
+`r/association-matrix.csv`. That output contains every sample-covariance and
+Pearson-correlation matrix entry, ordered by case, row, then column.
 
 | Case                                    | Purpose                                                             |
 | --------------------------------------- | ------------------------------------------------------------------- |
 | `baseline`                              | Ordinary decimal observations and interpolation                     |
 | `asymmetric-tail`                       | Uneven tails and, for dispersion, a negative mean/CV                |
-| `ties`                                  | Repeated integer observations and quantile boundaries               |
+| `ties`                                  | Repeated values, quantile boundaries, and average ranks             |
+| `signed-zeros`                          | Positive and negative zero receiving the same average rank          |
 | `constant` / `singleton`                | Empirical steps for identical observations or a single observation  |
-| `two-point`                             | Constant empirical probabilities between distinct observations      |
+| `two-point`                             | Empirical endpoints and sample standardization of two observations  |
 | `minimum-shape-sample`                  | Four observations and small-sample corrections                      |
 | `symmetric`                             | Zero skewness; included only in moments, where a zero mean is valid |
 | `perfect-positive` / `perfect-negative` | Exact linear relationships and correlation signs                    |
@@ -70,11 +73,18 @@ between observations. The same samples supply ECDF, strict survival, and
 Hyndman–Fan Type 1 inverse ECDF references. Type 7 quantile references remain
 separate.
 
+Transform fixtures provide demeaned values, sample z-scores, and one-based
+average ranks in a single per-observation table, `r/transform.csv`. Its
+zero-based observation indices preserve fixture order; they are distinct from
+the statistical ranks. Every transform fixture is nonconstant and contains at
+least two observations so that all z-scores are finite. Constant and singleton
+transform behavior belongs in Rust tests.
+
 Paired association fixtures also supply Spearman and Kendall tau-b references.
-Dedicated cases cover monotonic nonlinear relationships, mixed ranks, and
-ties in one or both variables. Matrix fixtures cover a single variable,
-multiple scales, and linearly dependent nonconstant columns. These columns
-are valid for covariance and correlation even when the matrix is singular.
+Dedicated cases cover monotonic nonlinear relationships, mixed ranks, and ties
+in one or both variables. Matrix fixtures cover a single variable, multiple
+scales, and linearly dependent nonconstant columns. These columns are valid for
+covariance and correlation even when the matrix is singular.
 
 Singular predictors, zero-mean CV cases, and extreme scales/offsets belong in
 Rust tests or appropriate NIST validation. Do not add a case to a family where
@@ -96,3 +106,4 @@ shasum -a 256 --check test-support/reference-data/data/nist/linear-regression/SH
 
 Use approximate comparisons with the workspace's shared test utilities. Choose
 tolerances appropriate to each statistic and numerical scale.
+

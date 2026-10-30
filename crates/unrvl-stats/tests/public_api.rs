@@ -1,10 +1,21 @@
 use unrvl_stats::distribution::empirical::Ecdf;
 use unrvl_stats::prelude::*;
 use unrvl_stats::regression::simple_linear::SimpleLinearRegression;
-use unrvl_stats::{association, dispersion, moments, quantile};
+use unrvl_stats::{association, dispersion, moments, quantile, transform};
 
 const XS: &[f64] = &[1.0, 2.0, 3.0, 4.0, 5.0];
 const YS: &[f64] = &[2.0, 3.0, 4.0, 5.0, 6.0];
+
+#[test]
+fn transform_functions_and_extension_methods_are_available_externally() {
+    let _ = transform::demean(XS);
+    let _ = transform::z_score(XS);
+    let _ = transform::ranks(XS);
+
+    let _ = XS.demean();
+    let _ = XS.z_score();
+    let _ = XS.ranks();
+}
 
 #[test]
 fn simple_linear_regression_is_available_externally() {

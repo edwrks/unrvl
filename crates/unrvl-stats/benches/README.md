@@ -9,6 +9,7 @@ cargo bench -p unrvl-stats --bench quantiles
 cargo bench -p unrvl-stats --bench empirical
 cargo bench -p unrvl-stats --bench association
 cargo bench -p unrvl-stats --bench regression
+cargo bench -p unrvl-stats --bench transform
 ```
 
 Filter a benchmark group when only one workload is needed:
@@ -36,6 +37,7 @@ cargo bench -p unrvl-stats -- --test
 | `empirical`   | ECDF construction, then CDF, survival, and inverse-CDF queries on an already constructed ECDF |
 | `association` | Covariance, Pearson, Spearman, Kendall tau-b, covariance matrices, and correlation matrices   |
 | `regression`  | Simple linear fit, residual evaluation, and scalar prediction on an already fitted model      |
+| `transform`   | Demeaning, sample z-scores, and one-based average ranks                                       |
 
 ## Input data
 
@@ -59,10 +61,10 @@ tails. Batch outputs use fixed-size arrays.
 Shared input definitions live in `support/data.rs`. The subdirectory keeps the
 helper separate from the standalone benchmark targets discovered by Cargo.
 
-Most scalar workloads use 32, 1,024, 32,768, and 1,048,576 observations. Kendall
-also includes 256 and 4,096 to show how sorting and inversion counting scale
-through intermediate sample sizes. Matrices vary observation count and variable
-count separately.
+Most scalar and transform workloads use 32, 1,024, 32,768, and 1,048,576
+observations. Kendall also includes 256 and 4,096 to show how sorting and
+inversion counting scale through intermediate sample sizes. Matrices vary
+observation count and variable count separately.
 
 ## Timing and throughput
 
@@ -78,6 +80,7 @@ Criterion's elements-per-second figure uses these units:
 | Scalar statistics, including multi-call workloads | `n` input values                                          |
 | Paired association                                | `n` paired observation positions, each containing x and y |
 | Regression fit and residuals                      | `n` paired observation positions, each containing x and y |
+| Sample transforms                                 | `n` input values                                          |
 | Matrix association                                | `n * p` input values across `p` series                    |
 | ECDF construction                                 | `n` input values                                          |
 | Single ECDF query                                 | One query                                                 |
