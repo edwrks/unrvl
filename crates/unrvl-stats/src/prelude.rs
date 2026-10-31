@@ -4,4 +4,4 @@ pub use crate::association::AssociationExt;
 pub use crate::dispersion::DispersionExt;
 pub use crate::moments::MomentsExt;
 pub use crate::quantile::QuantileExt;
-// pub use crate::transform::TransformsExt;
+pub use crate::transform::TransformExt;

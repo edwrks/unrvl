@@ -13,3 +13,4 @@ pub mod moments;
 mod parsing;
 pub mod quantiles;
 pub mod regression;
+pub mod transform;

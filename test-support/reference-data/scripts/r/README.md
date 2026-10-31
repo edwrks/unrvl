@@ -15,10 +15,10 @@ read-only, and output is written to `data/r/`.
 
 Inputs live under `data/fixtures/r/<family>/*.csv`.
 
-Moments, dispersion, quantiles, and empirical fixtures use a `value` column.
-Paired association and regression use exactly `x,y`. For regression, `x` is the
-predictor and `y` is the response. Association matrix fixtures use one named
-column per variable and one row per observation.
+Moments, dispersion, quantiles, empirical, and transform fixtures use a
+`value` column. Paired association and regression use exactly `x,y`. For
+regression, `x` is the predictor and `y` is the response. Association matrix
+fixtures use one named column per variable and one row per observation.
 
 | Family / output               | Columns after `case`                       |
 | ----------------------------- | ------------------------------------------ |
@@ -31,6 +31,7 @@ column per variable and one row per observation.
 | `association-matrix.csv`      | `n,row,column,covariance,correlation`      |
 | `regression.csv`              | `n,intercept,slope,r_squared`              |
 | `regression-observations.csv` | `observation,prediction,residual`          |
+| `transform.csv`               | `observation,demeaned,z_score,rank`        |
 
 - Variance, standard deviation, and covariance use the sample denominator
   `n - 1`.
@@ -82,6 +83,28 @@ zero-based `observation` index in original fixture order. Perfect-line fixtures
 may produce small floating-point residuals and warnings from `summary.lm`; all
 committed reference values are finite. Constant responses, constant predictors,
 invalid inputs, and extreme scales are covered by Rust tests.
+
+## Statistical Transformations
+
+`transform.R` reads the five single-column fixtures under `fixtures/r/transform/`
+and writes one combined table, `transform.csv`. Each observation receives:
+
+- `demeaned`: `x - mean(x)`.
+- `z_score`: `as.numeric(scale(x))`, using R's default centering and sample
+  standard deviation with denominator `n - 1`.
+- `rank`: `rank(x, ties.method = "average")`, with one-based average ranks.
+
+The table contains 26 rows, sorted by case and then the zero-based `observation`
+index in original fixture order. These indices identify rows; the `rank` values
+are statistical ranks and may be fractional. Positive and negative zero tie.
+
+Cases cover ordinary decimals, uneven tails, unsorted tied groups, signed
+zeros, and two observations. The two-observation case distinguishes sample
+standardization from population standardization.
+
+Every fixture is finite and nonconstant with at least two observations, so all
+three outputs are finite. Empty, constant, singleton, non-finite, and numerical
+stress cases belong in the Rust transform tests.
 
 ## Association Fixtures and Matrices
 

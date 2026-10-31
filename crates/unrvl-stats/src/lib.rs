@@ -9,3 +9,4 @@ pub mod moments;
 pub mod prelude;
 pub mod quantile;
 pub mod regression;
+pub mod transform;
