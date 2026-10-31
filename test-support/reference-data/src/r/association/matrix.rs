@@ -154,12 +154,14 @@ impl Statistics {
     }
 }
 
-/// Reference covariance and Pearson correlation for a pair of variables.
+/// Reference sample/population covariance and Pearson correlation for a pair
+/// of variables.
 #[derive(Debug, Clone, Copy)]
 pub struct Entry {
     row: usize,
     column: usize,
     covariance: f64,
+    population_covariance: f64,
     correlation: f64,
 }
 
@@ -182,6 +184,12 @@ impl Entry {
         self.covariance
     }
 
+    /// Population covariance with denominator `n`.
+    #[must_use]
+    pub const fn population_covariance(&self) -> f64 {
+        self.population_covariance
+    }
+
     /// Pearson correlation in `[-1, 1]`.
     #[must_use]
     pub const fn correlation(&self) -> f64 {
@@ -194,7 +202,8 @@ struct Parser {
 }
 
 impl Parser {
-    const REFERENCE_HEADER: &'static str = "case,n,row,column,covariance,correlation";
+    const REFERENCE_HEADER: &'static str =
+        "case,n,row,column,covariance,population_covariance,correlation";
 
     const fn new(dataset: Dataset) -> Self {
         Self { dataset }
@@ -315,8 +324,8 @@ impl Parser {
 
             assert_eq!(
                 fields.len(),
-                6,
-                "matrix reference row should contain exactly six fields"
+                7,
+                "matrix reference row should contain exactly seven fields"
             );
 
             let n = parse_usize(fields[1], "reference n");
@@ -329,9 +338,16 @@ impl Parser {
             let row = parse_usize(fields[2], "reference row");
             let column = parse_usize(fields[3], "reference column");
             let covariance = parse_finite(fields[4], "reference covariance");
-            let correlation = parse_correlation(fields[5], "reference Pearson correlation");
+            let population_covariance = parse_finite(fields[5], "reference population_covariance");
+            let correlation = parse_correlation(fields[6], "reference Pearson correlation");
 
-            entries.push(Entry { row, column, covariance, correlation });
+            entries.push(Entry {
+                row,
+                column,
+                covariance,
+                population_covariance,
+                correlation,
+            });
         }
 
         let n = count.expect("matrix reference data should contain the requested case");
@@ -360,12 +376,14 @@ mod tests {
 
     #[test]
     fn all_datasets_load() {
-        for (dataset, dimension) in [
+        let datasets = [
             (Dataset::Baseline, 3),
             (Dataset::DifferentScales, 3),
             (Dataset::LinearlyDependent, 3),
             (Dataset::SingleVariable, 1),
-        ] {
+        ];
+
+        for (dataset, dimension) in datasets {
             let reference = dataset.load();
             let stats = reference.statistics();
 

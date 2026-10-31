@@ -6,166 +6,81 @@ From the repository root, regenerate all reference CSVs with:
 docker compose -f test-support/reference-data/scripts/r/docker/compose.yaml run --build --rm generate
 ```
 
-Docker with Compose is the only local prerequisite.
+Docker with Compose is the only local prerequisite. Building the image downloads
+pinned dependencies; generation runs with networking disabled. Fixtures and
+source are mounted read-only, and output is written to `data/r/`.
 
-Generation runs without network access. Fixtures and source are mounted
-read-only, and output is written to `data/r/`.
+## Statistical Definitions
 
-## Families and Definitions
+Each family script defines its R calculations. Exact CSV headers live in the
+[committed tables](../../data/r/) and are checked by the
+[typed loaders](../../src/r/).
 
-Inputs live under `data/fixtures/r/<family>/*.csv`.
+- [moments.R](moments.R): arithmetic mean; variance with divisors `n - 1`, `n`,
+  and `n - 2`; and Joanes-Gill Type 1/2/3 skewness and kurtosis through
+  `e1071::skewness` and `e1071::kurtosis`. Kurtosis includes **excess** and
+  **Pearson** references; Pearson adds three to each corresponding excess
+  estimate. Sample variance uses `stats::var(x)`; population and custom-divisor
+  references use centered sums directly: `mean((x - mean(x))^2)` and
+  `sum((x - mean(x))^2) / (length(x) - 2)`.
+- [dispersion.R](dispersion.R): range, Type 7 IQR, **raw** MAD using
+  `stats::mad(x, constant = 1)`, and sample/population standard deviations and
+  CVs. Sample standard deviation uses `stats::sd(x)`; population standard
+  deviation uses `sqrt(mean((x - mean(x))^2))`. Both CVs divide by the signed
+  mean and are ratios, not percentages.
+- [quantiles.R](quantiles.R): `stats::quantile(x, probs, type = 7)` at the
+  probabilities declared in the script.
+- [empirical.R](empirical.R): `stats::ecdf(x)(query)` includes ties;
+  `mean(x > query)` counts strict survival directly. Inverse ECDF references use
+  `stats::quantile(x, probs, type = 1)`, selecting observations without
+  interpolation; probability zero gives the minimum and one gives the maximum.
+  Type 1 uses the pinned R version's default rounding tolerance (`fuzz`).
+- [association.R](association.R): `stats::cov` uses the sample divisor `n - 1`.
+  Paired population covariance uses `mean((x - mean(x)) * (y - mean(y)))`.
+  `stats::cor` supplies Pearson, Spearman with average ranks, and Kendall tau-b
+  via its corresponding `method` arguments. Matrices use sample covariance,
+  population covariance from `crossprod(centered) / nrow(x)` with centered
+  columns, and Pearson correlation.
+- [regression.R](regression.R): default `stats::lm(y ~ x)` includes an
+  intercept. Coefficients and R² come from the fit and its summary; observation
+  references use `stats::predict` and `stats::residuals`. The slope is also the
+  beta reference.
+- [transform.R](transform.R): `x - mean(x)`, sample z-scores from
+  `as.numeric(scale(x))`, population z-scores from
+  `centered / sqrt(mean(centered^2))`, and `rank(x, ties.method = "average")`.
+  Statistical ranks are one-based and may be fractional; positive and negative
+  zero tie.
 
-Moments, dispersion, quantiles, empirical, and transform fixtures use a
-`value` column. Paired association and regression use exactly `x,y`. For
-regression, `x` is the predictor and `y` is the response. Association matrix
-fixtures use one named column per variable and one row per observation.
+## Input and Output Contracts
 
-| Family / output               | Columns after `case`                       |
-| ----------------------------- | ------------------------------------------ |
-| `moments.csv`                 | `n,mean,variance,skewness,excess_kurtosis` |
-| `dispersion.csv`              | `n,range,iqr,mad,std_dev,cv`               |
-| `quantiles.csv`               | `probability,value`                        |
-| `empirical.csv`               | `query,cdf,sf`                             |
-| `empirical-quantiles.csv`     | `probability,value`                        |
-| `association.csv`             | `n,covariance,pearson,spearman,kendall`    |
-| `association-matrix.csv`      | `n,row,column,covariance,correlation`      |
-| `regression.csv`              | `n,intercept,slope,r_squared`              |
-| `regression-observations.csv` | `observation,prediction,residual`          |
-| `transform.csv`               | `observation,demeaned,z_score,rank`        |
+The [data guide](../../data/README.md) defines fixture formats and inclusion
+rules. Empirical query/probability lists live in `empirical.R`; they must match
+fixture case names and be finite, nonempty, and strictly increasing.
+Probabilities must lie in `[0, 1]`.
 
-- Variance, standard deviation, and covariance use the sample denominator
-  `n - 1`.
-- Skewness and excess kurtosis use `e1071` Type 2; moments require at least four
-  observations.
-- IQR and `quantiles.csv` use Type 7. Quantile probabilities are 0, .01, .05,
-  .25, .5, .75, .95, .99, and 1.
-- The empirical `cdf` column uses `stats::ecdf(x)(query)`: the fraction of
-  observations less than or equal to the query, including all ties. Values are
-  in `[0, 1]`; the ECDF is a step function without interpolation.
-- The empirical `sf` column uses `mean(x > query)`, counting strict exceedances
-  directly rather than subtracting the ECDF from one.
-- Inverse ECDF references in `empirical-quantiles.csv` use Hyndman–Fan Type 1
-  quantiles: `stats::quantile(x, probs, type = 1)`. Values are observations
-  selected without interpolation. Probability zero returns the sample minimum;
-  probability one returns the maximum. This does not change the Type 7
-  references in `quantiles.csv`.
-- MAD is **raw** median absolute deviation from the median:
-  `stats::mad(x, center = stats::median(x), constant = 1)`. R's default scaling
-  is intentionally disabled.
-- CV is the **signed ratio** `stats::sd(x) / mean(x)`, not a percentage or an
-  absolute value. Dispersion fixtures have non-zero means; the negative-mean
-  asymmetric fixture tests this convention.
-- Paired `pearson` and matrix `correlation` columns are Pearson correlation.
-  Paired `pearson` uses `stats::cor(x, y, method = "pearson")`; `spearman` uses
-  `stats::cor(x, y, method = "spearman")`, with average ranks for ties;
-  `kendall` uses `stats::cor(x, y, method = "kendall")`, giving Kendall tau-b.
-- Regression uses unmodified `stats::lm(y ~ x)`. Coefficients and R² come
-  directly from the fit and its summary. The slope also serves as the beta
-  reference.
+Outputs use fixture filenames without extensions as `case` labels. Cases are
+sorted, with rows within each case ordered as follows:
 
-`versions.csv` has `component,version` columns and records the actual R version
-and all locked package versions. Every numeric reference is finite, formatted
-with 17 significant digits, and directly comparable with Rust `f64`. Query and
-probability labels retain their declared decimal spelling. Files use UTF-8, LF
-endings, unquoted fields, stable headers, no row numbers, and sorted cases (then
-ascending probability for quantile tables, query for `empirical.csv`, or row
-then column for `association-matrix.csv`).
+- Quantile tables: ascending probability; empirical CDF/survival: ascending
+  query.
+- Regression observations and transforms: zero-based `observation` indices in
+  original fixture order, distinct from statistical ranks.
+- Association matrices: all `p * p` entries in row-major order, including the
+  diagonal and both triangles. Zero-based `row,column` indices follow variable
+  order in the fixture header.
 
-## Simple Linear Regression
-
-`regression.R` uses the five paired fixtures and default `stats::lm(y ~ x)` with
-an intercept. `regression.csv` stores fit coefficients, R², and pair counts.
-`regression-observations.csv` stores predictions from `stats::predict` at the
-fixture predictors and residuals from `stats::residuals` together in each row.
-
-The per-observation table contains 29 rows, sorted by case and then the
-zero-based `observation` index in original fixture order. Perfect-line fixtures
-may produce small floating-point residuals and warnings from `summary.lm`; all
-committed reference values are finite. Constant responses, constant predictors,
-invalid inputs, and extreme scales are covered by Rust tests.
-
-## Statistical Transformations
-
-`transform.R` reads the five single-column fixtures under `fixtures/r/transform/`
-and writes one combined table, `transform.csv`. Each observation receives:
-
-- `demeaned`: `x - mean(x)`.
-- `z_score`: `as.numeric(scale(x))`, using R's default centering and sample
-  standard deviation with denominator `n - 1`.
-- `rank`: `rank(x, ties.method = "average")`, with one-based average ranks.
-
-The table contains 26 rows, sorted by case and then the zero-based `observation`
-index in original fixture order. These indices identify rows; the `rank` values
-are statistical ranks and may be fractional. Positive and negative zero tie.
-
-Cases cover ordinary decimals, uneven tails, unsorted tied groups, signed
-zeros, and two observations. The two-observation case distinguishes sample
-standardization from population standardization.
-
-Every fixture is finite and nonconstant with at least two observations, so all
-three outputs are finite. Empty, constant, singleton, non-finite, and numerical
-stress cases belong in the Rust transform tests.
-
-## Association Fixtures and Matrices
-
-`association.R` owns both generators. `generate_association()` reads
-`fixtures/r/association/` and writes `association.csv`;
-`generate_association_matrix()` reads `fixtures/r/association-matrix/` and
-writes `association-matrix.csv`. Both are called by `generate.R`.
-
-The eight paired cases cover ordinary decimals, positive and negative linear
-association, zero covariance, a monotonic nonlinear relationship, mixed rank
-order, ties in one variable, and unequal ties in both variables including
-repeated pairs.
-
-Matrix inputs have at least two observations and one variable. Headers must
-contain nonempty, unique variable names. Records must be rectangular and all
-observations finite. Header order defines variable order; rows remain aligned
-across variables. No rows or pairs are silently deleted.
-
-Matrix references use `stats::cov(X)` and `stats::cor(X)`: sample covariance
-with denominator `n - 1` and Pearson correlation. Each output row contains:
-
-- `case`: the fixture filename without its extension.
-- `n`: the number of observation rows in the fixture.
-- `row,column`: zero-based variable indices in fixture-header order.
-- `covariance,correlation`: the corresponding matrix entries.
-
-All `p * p` entries are written for `p` variables, including the diagonal and
-both triangles, in row-major order. The four matrix cases cover ordinary
-observations, a single variable, differing variable scales, and linearly
-dependent columns. They produce 28 output rows.
-
-Every column must be nonconstant for the combined covariance/correlation
-reference to be finite. Linear dependence between nonconstant columns is valid;
-matrix invertibility is not required. Constant-column correlations, invalid
-inputs, and numerical extremes belong in Rust tests.
-
-## Empirical Queries and Probabilities
-
-`empirical.R` declares query and probability lists for each observation fixture.
-Case names must match exactly, and each list must be finite, nonempty, and
-strictly increasing. Probabilities must lie in `[0, 1]`. There are no separate
-input CSVs for queries or probabilities.
-
-The five cases cover ordinary decimal observations, a constant sample, a
-singleton, repeated observations, and two distinct observations. They produce:
-
-- 33 ECDF and survival rows, with queries below and above the sample range, at
-  observations, and between observations.
-- 68 inverse ECDF rows, covering probability endpoints, interior probabilities,
-  and values below, at, and above the cumulative jumps. For the ties fixture,
-  the jump probabilities `2/9`, `4/9`, and `7/9` use decimal approximations.
-
-Hyndman–Fan Type 1 references use the pinned R version's default rounding
-tolerance (`fuzz`). The tables provide references for `Ecdf::cdf`, `Ecdf::sf`,
-and `Ecdf::inverse_cdf`.
+Numeric references are finite and serialized with 17 significant digits for Rust
+`f64` comparisons. Query and probability labels keep their declared decimal
+spelling. CSVs use UTF-8, LF endings, unquoted fields, stable headers, and no
+implicit row numbers. [common.R](common.R) handles validation and serialization.
 
 ## Reproducibility
 
-- R **4.6.1**, from a Rocker image pinned by version and digest.
-- Platform **linux/amd64**, using Docker emulation on ARM hosts.
-- `CRAN_SNAPSHOT=2026-07-01`, using
-  <https://packagemanager.posit.co/cran/2026-07-01>.
-- `E1071_VERSION=1.7-17`.
-- Exact R package dependencies in **renv.lock**.
+The [Dockerfile](docker/Dockerfile) pins the R image by version and digest and
+sets a dated CRAN snapshot. [renv.lock](renv.lock) locks R and package versions,
+including e1071. [Compose](docker/compose.yaml) fixes `linux/amd64`, using
+emulation on ARM hosts.
+
+The generator checks installed versions against the lockfile before writing
+references. Actual R and package versions are recorded in
+[versions.csv](../../data/r/versions.csv).

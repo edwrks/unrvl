@@ -2,7 +2,7 @@ mod matrix;
 
 use reference_data::r::association::paired::Dataset;
 use test_utils::approx::{Tolerance, assert_approx_eq};
-use unrvl_stats::association;
+use unrvl_stats::{Normalization, association};
 
 #[test]
 fn baseline() {
@@ -48,12 +48,21 @@ fn run(dataset: Dataset) {
     let reference = dataset.load();
     let stats = reference.statistics();
 
-    let covariance = association::covariance(reference.x(), reference.y());
     let kendall = association::kendall(reference.x(), reference.y());
     let pearson = association::pearson(reference.x(), reference.y());
     let spearman = association::spearman(reference.x(), reference.y());
 
-    assert_approx_eq(covariance, stats.covariance(), Tolerance::STRICT);
+    let covariance_cases = [
+        (Normalization::Sample, stats.covariance()),
+        (Normalization::Population, stats.population_covariance()),
+    ];
+
+    for (normalization, expected) in covariance_cases {
+        let actual = association::covariance(reference.x(), reference.y(), normalization);
+
+        assert_approx_eq(actual, expected, Tolerance::STRICT);
+    }
+
     assert_approx_eq(pearson, stats.pearson(), Tolerance::STRICT);
     assert_approx_eq(kendall, stats.kendall(), Tolerance::STRICT);
     assert_approx_eq(spearman, stats.spearman(), Tolerance::STRICT);

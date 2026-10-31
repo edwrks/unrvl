@@ -1,6 +1,6 @@
 use reference_data::r::transform::{Dataset, Statistics};
 use test_utils::approx::{Tolerance, assert_all_approx_eq};
-use unrvl_stats::transform;
+use unrvl_stats::{Normalization, transform};
 
 #[test]
 fn asymmetric_tail() {
@@ -36,10 +36,16 @@ fn run(dataset: Dataset) {
         .map(Statistics::demeaned)
         .collect();
 
-    let expected_z_scores: Vec<_> = reference
+    let expected_sample_z_scores: Vec<_> = reference
         .statistics()
         .iter()
         .map(Statistics::z_score)
+        .collect();
+
+    let expected_population_z_scores: Vec<_> = reference
+        .statistics()
+        .iter()
+        .map(Statistics::population_z_score)
         .collect();
 
     let expected_ranks: Vec<_> = reference
@@ -49,10 +55,20 @@ fn run(dataset: Dataset) {
         .collect();
 
     let demeaned = transform::demean(xs);
-    let z_scores = transform::z_score(xs);
+    let sample_z_scores = transform::z_score(xs, Normalization::Sample);
+    let population_z_scores = transform::z_score(xs, Normalization::Population);
     let ranks = transform::ranks(xs);
 
     assert_all_approx_eq(&demeaned, &expected_demeaned, Tolerance::STRICT);
-    assert_all_approx_eq(&z_scores, &expected_z_scores, Tolerance::STRICT);
+    assert_all_approx_eq(
+        &sample_z_scores,
+        &expected_sample_z_scores,
+        Tolerance::STRICT,
+    );
+    assert_all_approx_eq(
+        &population_z_scores,
+        &expected_population_z_scores,
+        Tolerance::STRICT,
+    );
     assert_eq!(ranks, expected_ranks);
 }

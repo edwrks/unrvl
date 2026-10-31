@@ -2,8 +2,9 @@
 //!
 //! Select a [`Dataset`] and call [`Dataset::load`] to obtain two aligned
 //! observation vectors and their [`Statistics`]. All observations and reference
-//! values are finite. Covariance uses the sample denominator `n - 1`;
-//! correlations are Pearson, Spearman with average ranks, and Kendall tau-b.
+//! values are finite. Covariance references use denominators `n - 1` (sample)
+//! and `n` (population). Correlations are Pearson, Spearman with average ranks,
+//! and Kendall tau-b.
 //!
 //! ```
 //! use reference_data::r::association::paired::Dataset;
@@ -141,6 +142,7 @@ impl Reference {
 pub struct Statistics {
     n: usize,
     covariance: f64,
+    population_covariance: f64,
     pearson: f64,
     spearman: f64,
     kendall: f64,
@@ -157,6 +159,12 @@ impl Statistics {
     #[must_use]
     pub const fn covariance(&self) -> f64 {
         self.covariance
+    }
+
+    /// Population covariance with denominator `n`.
+    #[must_use]
+    pub const fn population_covariance(&self) -> f64 {
+        self.population_covariance
     }
 
     /// Pearson correlation in `[-1, 1]`.
@@ -184,7 +192,8 @@ struct Parser {
 
 impl Parser {
     const FIXTURE_HEADER: &'static str = "x,y";
-    const REFERENCE_HEADER: &'static str = "case,n,covariance,pearson,spearman,kendall";
+    const REFERENCE_HEADER: &'static str =
+        "case,n,covariance,population_covariance,pearson,spearman,kendall";
 
     const fn new(dataset: Dataset) -> Self {
         Self { dataset }
@@ -266,8 +275,8 @@ impl Parser {
 
         assert_eq!(
             fields.len(),
-            6,
-            "paired reference row should contain exactly six fields"
+            7,
+            "paired reference row should contain exactly seven fields"
         );
 
         let n = parse_usize(fields[1], "reference n");
@@ -275,9 +284,10 @@ impl Parser {
         Statistics {
             n,
             covariance: parse_finite(fields[2], "reference covariance"),
-            pearson: parse_correlation(fields[3], "reference Pearson correlation"),
-            spearman: parse_correlation(fields[4], "reference Spearman correlation"),
-            kendall: parse_correlation(fields[5], "reference Kendall tau-b"),
+            population_covariance: parse_finite(fields[3], "reference population_covariance"),
+            pearson: parse_correlation(fields[4], "reference Pearson correlation"),
+            spearman: parse_correlation(fields[5], "reference Spearman correlation"),
+            kendall: parse_correlation(fields[6], "reference Kendall tau-b"),
         }
     }
 }

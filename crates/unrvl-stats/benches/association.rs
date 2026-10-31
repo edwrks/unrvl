@@ -3,6 +3,7 @@ use std::hint::black_box;
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use rand::SeedableRng;
 use rand::rngs::StdRng;
+use unrvl_stats::Normalization;
 use unrvl_stats::association::{
     correlation_matrix, covariance, covariance_matrix, kendall, pearson, spearman,
 };
@@ -27,7 +28,7 @@ fn benchmark_paired(c: &mut Criterion) {
             group.throughput(Throughput::Elements(n as u64));
 
             group.bench_function(BenchmarkId::new("covariance", n), |b| {
-                b.iter(|| covariance(black_box(&xs), black_box(&ys)));
+                b.iter(|| covariance(black_box(&xs), black_box(&ys), Normalization::Sample));
             });
 
             group.bench_function(BenchmarkId::new("pearson", n), |b| {
@@ -87,7 +88,7 @@ fn benchmark_matrices(c: &mut Criterion) {
             group.throughput(Throughput::Elements((n * variables) as u64));
 
             group.bench_function(BenchmarkId::new("covariance", &shape), |b| {
-                b.iter(|| covariance_matrix(black_box(&series)).unwrap());
+                b.iter(|| covariance_matrix(black_box(&series), Normalization::Sample).unwrap());
             });
 
             group.bench_function(BenchmarkId::new("correlation", &shape), |b| {

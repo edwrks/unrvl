@@ -9,12 +9,19 @@ const YS: &[f64] = &[2.0, 3.0, 4.0, 5.0, 6.0];
 #[test]
 fn transform_functions_and_extension_methods_are_available_externally() {
     let _ = transform::demean(XS);
-    let _ = transform::z_score(XS);
     let _ = transform::ranks(XS);
 
     let _ = XS.demean();
-    let _ = XS.z_score();
     let _ = XS.ranks();
+
+    for normalization in [
+        Normalization::Population,
+        Normalization::Sample,
+        Normalization::Ddof(2),
+    ] {
+        let _ = transform::z_score(XS, normalization);
+        let _ = XS.z_score(normalization);
+    }
 }
 
 #[test]
@@ -31,18 +38,25 @@ fn simple_linear_regression_is_available_externally() {
 
 #[test]
 fn association_functions_and_extension_methods_are_available_externally() {
-    let _ = association::covariance(XS, YS);
     let _ = association::kendall(XS, YS);
     let _ = association::pearson(XS, YS);
     let _ = association::spearman(XS, YS);
 
-    let _ = XS.covariance(YS);
     let _ = XS.kendall(YS);
     let _ = XS.pearson(YS);
     let _ = XS.spearman(YS);
 
-    let result = association::covariance_matrix(&[XS, YS]);
-    assert!(result.is_ok());
+    for normalization in [
+        Normalization::Population,
+        Normalization::Sample,
+        Normalization::Ddof(2),
+    ] {
+        let _ = association::covariance(XS, YS, normalization);
+        let _ = XS.covariance(YS, normalization);
+
+        let result = association::covariance_matrix(&[XS, YS], normalization);
+        assert!(result.is_ok());
+    }
 
     let result = association::correlation_matrix(&[XS, YS]);
     assert!(result.is_ok());
@@ -62,27 +76,52 @@ fn dispersion_functions_and_extension_methods_are_available_externally() {
     let _ = dispersion::iqr(XS);
     let _ = dispersion::mad(XS);
     let _ = dispersion::range(XS);
-    let _ = dispersion::std_dev(XS);
-    let _ = dispersion::cv(XS);
 
     let _ = XS.iqr();
     let _ = XS.mad();
     let _ = XS.range();
-    let _ = XS.std_dev();
-    let _ = XS.cv();
+
+    for normalization in [
+        Normalization::Sample,
+        Normalization::Population,
+        Normalization::Ddof(2),
+    ] {
+        let _ = dispersion::std_dev(XS, normalization);
+        let _ = dispersion::cv(XS, normalization);
+
+        let _ = XS.std_dev(normalization);
+        let _ = XS.cv(normalization);
+    }
 }
 
 #[test]
 fn moment_functions_and_extension_methods_are_available_externally() {
     let _ = moments::mean(XS);
-    let _ = moments::var(XS);
-    let _ = moments::skewness(XS);
-    let _ = moments::excess_kurtosis(XS);
 
     let _ = XS.mean();
-    let _ = XS.var();
-    let _ = XS.skewness();
-    let _ = XS.excess_kurtosis();
+
+    for normalization in [
+        Normalization::Sample,
+        Normalization::Population,
+        Normalization::Ddof(2),
+    ] {
+        let _ = moments::var(XS, normalization);
+        let _ = XS.var(normalization);
+    }
+
+    for estimator in [
+        ShapeEstimator::Type1,
+        ShapeEstimator::Type2,
+        ShapeEstimator::Type3,
+    ] {
+        let _ = moments::skewness(XS, estimator);
+        let _ = XS.skewness(estimator);
+
+        for convention in [Kurtosis::Pearson, Kurtosis::Excess] {
+            let _ = moments::kurtosis(XS, estimator, convention);
+            let _ = XS.kurtosis(estimator, convention);
+        }
+    }
 }
 
 #[test]

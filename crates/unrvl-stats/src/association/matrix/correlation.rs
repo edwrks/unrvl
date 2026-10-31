@@ -1,6 +1,7 @@
 use unrvl_numerics::dot::compensated_dot;
 
-use super::{MatrixError, prepared_series};
+use super::{MatrixError, prepared_series, validate_series};
+use crate::Normalization;
 
 /// Returns the Pearson correlation matrix of aligned variable series.
 ///
@@ -49,7 +50,8 @@ use super::{MatrixError, prepared_series};
 /// # Ok::<(), MatrixError>(())
 /// ```
 pub fn correlation_matrix<S: AsRef<[f64]>>(series: &[S]) -> Result<Vec<Vec<f64>>, MatrixError> {
-    let prepared = prepared_series(series)?;
+    validate_series(series, Normalization::Sample)?;
+    let prepared = prepared_series(series);
     let dimension = prepared.len();
 
     // Pearson's denominator is the product of the Euclidean norms of the
@@ -91,6 +93,7 @@ mod tests {
     use test_utils::strategies::finite_series;
 
     use super::{MatrixError, correlation_matrix};
+    use crate::Normalization;
     use crate::association::pearson;
     use crate::moments::var;
 
@@ -289,7 +292,7 @@ mod tests {
             prop_assert_eq!(matrix.len(), dimension);
 
             // Bounded generated inputs let variance identify constant series.
-            let constant: Vec<_> = series.iter().map(|values| var(values) == 0.0).collect();
+            let constant: Vec<_> = series.iter().map(|values| var(values, Normalization::Sample) == 0.0).collect();
 
             for (i, row) in matrix.iter().enumerate() {
                 prop_assert_eq!(row.len(), dimension);

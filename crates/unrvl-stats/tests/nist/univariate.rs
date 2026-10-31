@@ -1,5 +1,6 @@
 use reference_data::nist::univariate::Dataset;
 use test_utils::approx::{Tolerance, assert_approx_eq};
+use unrvl_stats::Normalization;
 
 #[test]
 fn lew() {
@@ -51,7 +52,7 @@ fn run(dataset: Dataset) {
     let stats = reference.statistics();
     let xs = reference.observations();
     let mean = unrvl_stats::moments::mean(xs);
-    let std_dev = unrvl_stats::dispersion::std_dev(xs);
+    let std_dev = unrvl_stats::dispersion::std_dev(xs, Normalization::Sample);
 
     // NIST certifies the decimal inputs. Parsing the large-offset NumAcc
     // observations into f64 perturbs their spread. Allow half an input ULP

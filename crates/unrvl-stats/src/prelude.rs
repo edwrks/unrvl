@@ -1,7 +1,9 @@
-//! Extension traits for statistical operations on `f64` slices.
+//! Extension traits and estimator selections for statistical operations on
+//! slices.
 
+pub use crate::Normalization;
 pub use crate::association::AssociationExt;
 pub use crate::dispersion::DispersionExt;
-pub use crate::moments::MomentsExt;
+pub use crate::moments::{Kurtosis, MomentsExt, ShapeEstimator};
 pub use crate::quantile::QuantileExt;
 pub use crate::transform::TransformExt;

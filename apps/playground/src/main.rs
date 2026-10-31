@@ -1,4 +1,5 @@
 use reference_data::r::association::matrix;
+use unrvl::stats::Normalization;
 use unrvl::stats::association::{correlation_matrix, covariance_matrix};
 
 fn main() {
@@ -6,7 +7,7 @@ fn main() {
     println!("Variables: {:?}", data.variables());
     println!(
         "Covariance: {:?}",
-        covariance_matrix(data.series()).unwrap()
+        covariance_matrix(data.series(), Normalization::Sample).unwrap()
     );
     println!(
         "Correlation: {:?}",

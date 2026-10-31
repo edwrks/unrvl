@@ -1,6 +1,7 @@
 use thiserror::Error;
 use unrvl_numerics::convert::usize_to_f64;
 
+use crate::Normalization;
 use crate::internal::deviations::CenteredSample;
 
 mod correlation;
@@ -12,8 +13,8 @@ pub use covariance::covariance_matrix;
 /// Invalid aligned series supplied to an association matrix statistic.
 #[derive(Debug, Clone, Copy, PartialEq, Error)]
 pub enum MatrixError {
-    /// The first series contains fewer than two observations.
-    #[error("each series must contain at least two observations, got {count}")]
+    /// The first series has too few observations for the requested statistic.
+    #[error("insufficient observations per series for the requested statistic, got {count}")]
     InsufficientObservations {
         /// Number of observations in the first series.
         count: usize,
@@ -56,11 +57,9 @@ struct PreparedSeries {
     deviations: Vec<f64>,
 }
 
-/// Validates aligned series, then centers and scales each series once.
-fn prepared_series<S: AsRef<[f64]>>(series: &[S]) -> Result<Vec<PreparedSeries>, MatrixError> {
-    validate_series(series)?;
-
-    Ok(series
+/// Centers and scales each previously validated series once.
+fn prepared_series<S: AsRef<[f64]>>(series: &[S]) -> Vec<PreparedSeries> {
+    series
         .iter()
         .map(|values| {
             let sample =
@@ -70,16 +69,20 @@ fn prepared_series<S: AsRef<[f64]>>(series: &[S]) -> Result<Vec<PreparedSeries>,
                 deviations: sample.deviations().collect(),
             }
         })
-        .collect())
+        .collect()
 }
 
-/// Validates series without copying the observations.
-fn validate_series<S: AsRef<[f64]>>(series: &[S]) -> Result<(), MatrixError> {
+/// Validates series without copying observations and returns a positive
+/// divisor.
+fn validate_series<S: AsRef<[f64]>>(
+    series: &[S],
+    normalization: Normalization,
+) -> Result<usize, MatrixError> {
     let first = series.first().ok_or(MatrixError::NoVariables)?;
     let n = first.as_ref().len();
-    if n < 2 {
-        return Err(MatrixError::InsufficientObservations { count: n });
-    }
+    let divisor = normalization
+        .divisor(n)
+        .ok_or(MatrixError::InsufficientObservations { count: n })?;
 
     for (series, values) in series.iter().enumerate() {
         let values = values.as_ref();
@@ -101,5 +104,5 @@ fn validate_series<S: AsRef<[f64]>>(series: &[S]) -> Result<(), MatrixError> {
     // Check the observation-count bound before allocating deviations.
     let _ = usize_to_f64(n);
 
-    Ok(())
+    Ok(divisor)
 }

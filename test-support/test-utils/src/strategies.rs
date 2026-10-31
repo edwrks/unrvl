@@ -1,7 +1,8 @@
 //! Proptest strategies for numerical inputs.
 //!
-//! Provides finite values, samples, paired samples, aligned series, constant
-//! and nonconstant samples, and scaling factors for numerical property tests.
+//! Provides finite and non-finite values, samples, paired samples, aligned
+//! series, constant and nonconstant samples, and scaling factors for numerical
+//! property tests.
 //!
 //! Most strategies use moderate magnitudes so that tests can exercise
 //! mathematical properties without unrelated overflow or extreme-range effects.
@@ -170,6 +171,11 @@ pub fn exact_translation_case(min_len: usize) -> impl Strategy<Value = (Vec<f64>
 /// needed.
 pub fn finite_value() -> impl Strategy<Value = f64> {
     any::<f64>()
+}
+
+/// Generates `NaN`, positive infinity, or negative infinity.
+pub fn nonfinite_value() -> impl Strategy<Value = f64> {
+    prop::sample::select(vec![f64::NAN, f64::INFINITY, f64::NEG_INFINITY])
 }
 
 /// Generates bounded finite `f64` values.

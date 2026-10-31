@@ -31,12 +31,12 @@ unrvl = { version = "0.0.2", features = ["full"] }
 and accessed through their corresponding module:
 
 ```rust
-use unrvl::stats::moments;
+use unrvl::stats::{Normalization, moments};
 
 let xs = [1.0, 2.0, 3.0, 4.0, 5.0];
 
 let mean = moments::mean(&xs);
-let variance = moments::var(&xs);
+let variance = moments::var(&xs, Normalization::Sample);
 ```
 
 Extension traits are available from the component crate's prelude:
@@ -47,7 +47,7 @@ use unrvl::stats::prelude::*;
 let xs = [1.0, 2.0, 3.0, 4.0, 5.0];
 
 let mean = xs.mean();
-let variance = xs.var();
+let variance = xs.var(Normalization::Sample);
 ```
 
 ## Approach

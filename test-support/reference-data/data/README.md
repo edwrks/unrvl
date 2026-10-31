@@ -1,98 +1,45 @@
 # Statistical Test Data
 
-The workspace uses three complementary testing layers:
-
-| Layer                    | Responsibility                                            |
-| ------------------------ | --------------------------------------------------------- |
-| NIST datasets            | Independently certified numerical accuracy                |
-| R conformance fixtures   | Statistical definitions on small, well-conditioned inputs |
-| Rust unit/property tests | Undefined cases, numerical stress, and invariants         |
+Fixture requirements and integrity checks for the workspace's reference data.
+See the [R generator guide](../scripts/r/README.md) for regeneration and
+statistical definitions.
 
 ## Layout
 
-```text
-data/
-├── fixtures/r/
-│   ├── moments/
-│   ├── dispersion/
-│   ├── quantiles/
-│   ├── empirical/
-│   ├── association/
-│   ├── association-matrix/
-│   ├── regression/
-│   └── transform/
-├── nist/
-│   ├── linear-regression/
-│   └── univariate/
-└── r/
-    ├── moments.csv
-    ├── dispersion.csv
-    ├── quantiles.csv
-    ├── empirical.csv
-    ├── empirical-quantiles.csv
-    ├── association.csv
-    ├── association-matrix.csv
-    ├── regression.csv
-    ├── regression-observations.csv
-    ├── transform.csv
-    └── versions.csv
-```
+- [fixtures/r/](fixtures/r/): hand-authored observations grouped by family.
+- [r/](r/): committed R reference CSVs and environment versions.
+- [nist/](nist/): published univariate and linear-regression datasets,
+  certified values, and integrity manifests.
 
 ## R Fixtures
 
-**Inclusion in a fixture family means every statistic generated for that family
-must have a finite, usable R reference.**
+Every fixture must produce a finite, usable reference for every statistic in
+its family. Generation rejects malformed inputs and non-finite outputs.
 
-Univariate families use exactly `value`; bivariate families use exactly `x,y`,
-with `x` the predictor and `y` the response for regression (`y ~ x`). Files
-contain small hand-authored observations. Deliberate copies across families keep
-each corpus independent and easy to inspect.
+Univariate families use exactly `value`; paired association and regression use
+exactly `x,y`. For regression, `x` is the predictor and `y` the response
+(`y ~ x`). Matrix fixtures have one named column per variable and one row per
+aligned observation. All records must be rectangular, with nonempty, unique
+column names; no observations or pairs are silently deleted.
 
-`association-matrix/` contains rectangular numeric tables with one named column
-per variable and one row per aligned observation. Variable names must be
-nonempty and unique; header order defines the zero-based variable indices in
-`r/association-matrix.csv`. That output contains every sample-covariance and
-Pearson-correlation matrix entry, ordered by case, row, then column.
+Use small, well-conditioned samples covering ordinary decimals, ties, uneven
+tails, minimum sample sizes, and exact relationships where applicable. Copies
+across families are intentional so each corpus can evolve independently.
 
-| Case                                    | Purpose                                                             |
-| --------------------------------------- | ------------------------------------------------------------------- |
-| `baseline`                              | Ordinary decimal observations and interpolation                     |
-| `asymmetric-tail`                       | Uneven tails and, for dispersion, a negative mean/CV                |
-| `ties`                                  | Repeated values, quantile boundaries, and average ranks             |
-| `signed-zeros`                          | Positive and negative zero receiving the same average rank          |
-| `constant` / `singleton`                | Empirical steps for identical observations or a single observation  |
-| `two-point`                             | Empirical endpoints and sample standardization of two observations  |
-| `minimum-shape-sample`                  | Four observations and small-sample corrections                      |
-| `symmetric`                             | Zero skewness; included only in moments, where a zero mean is valid |
-| `perfect-positive` / `perfect-negative` | Exact linear relationships and correlation signs                    |
-| `zero-covariance`                       | Varying series with zero association                                |
+Key restrictions follow from the statistics generated together:
 
-Constant and singleton samples are valid empirical fixtures. Their query and
-probability lists live in `empirical.R`, alongside cases for ties and gaps
-between observations. The same samples supply ECDF, strict survival, and
-Hyndman–Fan Type 1 inverse ECDF references. Type 7 quantile references remain
-separate.
+- Moments require at least four observations and nonzero spread for adjusted
+  shape statistics.
+- Dispersion requires at least two observations and a nonzero mean for finite
+  sample/population standard deviations and signed CVs.
+- Association and transform fixtures require at least two observations and
+  nonconstant series for correlations and z-scores. Linearly dependent matrix
+  columns are valid; matrix invertibility is not required.
+- Constant and singleton samples are valid empirical fixtures. Their query and
+  probability lists live in [empirical.R](../scripts/r/empirical.R).
 
-Transform fixtures provide demeaned values, sample z-scores, and one-based
-average ranks in a single per-observation table, `r/transform.csv`. Its
-zero-based observation indices preserve fixture order; they are distinct from
-the statistical ranks. Every transform fixture is nonconstant and contains at
-least two observations so that all z-scores are finite. Constant and singleton
-transform behavior belongs in Rust tests.
-
-Paired association fixtures also supply Spearman and Kendall tau-b references.
-Dedicated cases cover monotonic nonlinear relationships, mixed ranks, and ties
-in one or both variables. Matrix fixtures cover a single variable, multiple
-scales, and linearly dependent nonconstant columns. These columns are valid for
-covariance and correlation even when the matrix is singular.
-
-Singular predictors, zero-mean CV cases, and extreme scales/offsets belong in
-Rust tests or appropriate NIST validation. Do not add a case to a family where
-any reference would be undefined or numerically unreliable.
-
-The [generator guide](../scripts/r/README.md) defines all statistics and the
-single Docker command. The generator reads fixtures without modifying them and
-writes finite, deterministic reference tables under `r/`.
+Undefined cases, degenerate fits, invalid divisors, and extreme scales or
+offsets belong in Rust unit/property tests or appropriate NIST validation.
 
 ## NIST Integrity
 
@@ -104,6 +51,5 @@ shasum -a 256 --check test-support/reference-data/data/nist/univariate/SHA256SUM
 shasum -a 256 --check test-support/reference-data/data/nist/linear-regression/SHA256SUMS
 ```
 
-Use approximate comparisons with the workspace's shared test utilities. Choose
-tolerances appropriate to each statistic and numerical scale.
-
+Use the [shared test utilities](../../test-utils/README.md) for approximate
+comparisons, with tolerances appropriate to the statistic and numerical scale.

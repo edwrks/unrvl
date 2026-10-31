@@ -20,6 +20,10 @@ pub enum Dataset {
 
     /// Repeated integer observations and quantile boundaries.
     Ties,
+
+    /// Two observations distinguishing sample and population standard
+    /// deviation.
+    TwoPoint,
 }
 
 impl Dataset {
@@ -41,6 +45,7 @@ impl Dataset {
             Self::Baseline => "baseline",
             Self::MinimumShapeSample => "minimum-shape-sample",
             Self::Ties => "ties",
+            Self::TwoPoint => "two-point",
         }
     }
 
@@ -57,6 +62,9 @@ impl Dataset {
             }
             Self::Ties => {
                 include_str!("../../data/fixtures/r/dispersion/ties.csv")
+            }
+            Self::TwoPoint => {
+                include_str!("../../data/fixtures/r/dispersion/two-point.csv")
             }
         }
     }
@@ -98,7 +106,9 @@ pub struct Statistics {
     iqr: f64,
     mad: f64,
     std_dev: f64,
+    population_std_dev: f64,
     cv: f64,
+    population_cv: f64,
 }
 
 impl Statistics {
@@ -132,11 +142,24 @@ impl Statistics {
         self.std_dev
     }
 
+    /// Population standard deviation using the variance denominator `n`.
+    #[must_use]
+    pub const fn population_std_dev(&self) -> f64 {
+        self.population_std_dev
+    }
+
     /// Signed coefficient of variation: sample standard deviation divided by
     /// the arithmetic mean, expressed as a ratio.
     #[must_use]
     pub const fn cv(&self) -> f64 {
         self.cv
+    }
+
+    /// Signed coefficient of variation: population standard deviation divided
+    /// by the arithmetic mean, expressed as a ratio.
+    #[must_use]
+    pub const fn population_cv(&self) -> f64 {
+        self.population_cv
     }
 }
 
@@ -145,7 +168,8 @@ struct Parser {
 }
 
 impl Parser {
-    const REFERENCE_HEADER: &'static str = "case,n,range,iqr,mad,std_dev,cv";
+    const REFERENCE_HEADER: &'static str =
+        "case,n,range,iqr,mad,std_dev,population_std_dev,cv,population_cv";
 
     const fn new(dataset: Dataset) -> Self {
         Self { dataset }
@@ -189,8 +213,8 @@ impl Parser {
         let fields: Vec<_> = row.split(',').collect();
         assert_eq!(
             fields.len(),
-            7,
-            "dispersion reference row should contain exactly seven fields"
+            9,
+            "dispersion reference row should contain exactly nine fields"
         );
 
         let n = parse_usize(fields[1], "reference n");
@@ -198,9 +222,20 @@ impl Parser {
         let iqr = parse_finite(fields[3], "reference iqr");
         let mad = parse_finite(fields[4], "reference mad");
         let std_dev = parse_finite(fields[5], "reference std_dev");
-        let cv = parse_finite(fields[6], "reference cv");
+        let population_std_dev = parse_finite(fields[6], "reference population_std_dev");
+        let cv = parse_finite(fields[7], "reference cv");
+        let population_cv = parse_finite(fields[8], "reference population_cv");
 
-        Statistics { n, range, iqr, mad, std_dev, cv }
+        Statistics {
+            n,
+            range,
+            iqr,
+            mad,
+            std_dev,
+            population_std_dev,
+            cv,
+            population_cv,
+        }
     }
 }
 
@@ -215,6 +250,7 @@ mod tests {
             Dataset::Baseline,
             Dataset::MinimumShapeSample,
             Dataset::Ties,
+            Dataset::TwoPoint,
         ];
 
         for dataset in datasets {
