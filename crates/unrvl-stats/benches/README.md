@@ -46,7 +46,7 @@ variable counts separately. Exact workloads and sizes live in each target.
 
 Variance, standard deviation, CV, covariance (scalar and matrix), and z-scores
 use `Normalization::Sample`. Skewness and kurtosis use `ShapeEstimator::Type2`,
-with `Kurtosis::Excess` for kurtosis.
+with `Kurtosis::Excess` for kurtosis. MAD uses `MadScale::Raw`.
 These choices also apply to the separate-call workloads.
 
 ## Timing and throughput

@@ -4,7 +4,7 @@ use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_m
 use rand::SeedableRng;
 use rand::rngs::StdRng;
 use unrvl_stats::Normalization;
-use unrvl_stats::dispersion::{cv, iqr, mad, range, std_dev};
+use unrvl_stats::dispersion::{MadScale, cv, iqr, mad, range, std_dev};
 
 #[path = "support/data.rs"]
 mod data;
@@ -30,7 +30,7 @@ fn benchmark_dispersion(c: &mut Criterion) {
             });
 
             group.bench_function(BenchmarkId::new("mad", n), |b| {
-                b.iter(|| mad(black_box(xs.as_slice())));
+                b.iter(|| mad(black_box(xs.as_slice()), MadScale::Raw));
             });
 
             group.bench_function(BenchmarkId::new("std_dev", n), |b| {
@@ -48,7 +48,7 @@ fn benchmark_dispersion(c: &mut Criterion) {
                     (
                         range(sample),
                         iqr(sample),
-                        mad(sample),
+                        mad(sample, MadScale::Raw),
                         std_dev(sample, Normalization::Sample),
                         cv(sample, Normalization::Sample),
                     )

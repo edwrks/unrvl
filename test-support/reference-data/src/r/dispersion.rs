@@ -105,6 +105,7 @@ pub struct Statistics {
     range: f64,
     iqr: f64,
     mad: f64,
+    scaled_mad: f64,
     std_dev: f64,
     population_std_dev: f64,
     cv: f64,
@@ -134,6 +135,14 @@ impl Statistics {
     #[must_use]
     pub const fn mad(&self) -> f64 {
         self.mad
+    }
+
+    /// Median absolute deviation with normal-consistency scaling.
+    ///
+    /// Uses factor `1 / Phi^-1(0.75)`, without a finite-sample correction.
+    #[must_use]
+    pub const fn scaled_mad(&self) -> f64 {
+        self.scaled_mad
     }
 
     /// Sample standard deviation using the variance denominator `n - 1`.
@@ -169,7 +178,7 @@ struct Parser {
 
 impl Parser {
     const REFERENCE_HEADER: &'static str =
-        "case,n,range,iqr,mad,std_dev,population_std_dev,cv,population_cv";
+        "case,n,range,iqr,mad,scaled_mad,std_dev,population_std_dev,cv,population_cv";
 
     const fn new(dataset: Dataset) -> Self {
         Self { dataset }
@@ -213,24 +222,26 @@ impl Parser {
         let fields: Vec<_> = row.split(',').collect();
         assert_eq!(
             fields.len(),
-            9,
-            "dispersion reference row should contain exactly nine fields"
+            10,
+            "dispersion reference row should contain exactly ten fields"
         );
 
         let n = parse_usize(fields[1], "reference n");
         let range = parse_finite(fields[2], "reference range");
         let iqr = parse_finite(fields[3], "reference iqr");
         let mad = parse_finite(fields[4], "reference mad");
-        let std_dev = parse_finite(fields[5], "reference std_dev");
-        let population_std_dev = parse_finite(fields[6], "reference population_std_dev");
-        let cv = parse_finite(fields[7], "reference cv");
-        let population_cv = parse_finite(fields[8], "reference population_cv");
+        let scaled_mad = parse_finite(fields[5], "reference scaled_mad");
+        let std_dev = parse_finite(fields[6], "reference std_dev");
+        let population_std_dev = parse_finite(fields[7], "reference population_std_dev");
+        let cv = parse_finite(fields[8], "reference cv");
+        let population_cv = parse_finite(fields[9], "reference population_cv");
 
         Statistics {
             n,
             range,
             iqr,
             mad,
+            scaled_mad,
             std_dev,
             population_std_dev,
             cv,
