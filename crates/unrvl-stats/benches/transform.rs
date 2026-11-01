@@ -3,6 +3,7 @@ use std::hint::black_box;
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use rand::SeedableRng;
 use rand::rngs::StdRng;
+use unrvl_stats::Normalization;
 use unrvl_stats::transform::{demean, ranks, z_score};
 
 #[path = "support/data.rs"]
@@ -26,7 +27,7 @@ fn benchmark_transform(c: &mut Criterion) {
             });
 
             group.bench_function(BenchmarkId::new("z_score", n), |b| {
-                b.iter(|| z_score(black_box(xs.as_slice())));
+                b.iter(|| z_score(black_box(xs.as_slice()), Normalization::Sample));
             });
 
             group.bench_function(BenchmarkId::new("ranks", n), |b| {

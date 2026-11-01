@@ -6,7 +6,10 @@ pub mod dispersion;
 pub mod distribution;
 mod internal;
 pub mod moments;
+mod normalization;
 pub mod prelude;
 pub mod quantile;
 pub mod regression;
 pub mod transform;
+
+pub use normalization::Normalization;

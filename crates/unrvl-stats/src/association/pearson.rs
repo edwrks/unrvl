@@ -87,6 +87,7 @@ mod tests {
     };
 
     use super::*;
+    use crate::Normalization;
     use crate::association::covariance;
     use crate::dispersion::std_dev;
 
@@ -220,13 +221,13 @@ mod tests {
         fn agrees_with_covariance_and_stays_in_range(
             (xs, ys) in finite_paired_samples(2)
         ) {
-            let denominator = std_dev(&xs) * std_dev(&ys);
+            let denominator = std_dev(&xs, Normalization::Sample) * std_dev(&ys, Normalization::Sample);
             let result = pearson(&xs, &ys);
 
             if denominator == 0.0 {
                 prop_assert!(result.is_nan());
             } else {
-                let expected = covariance(&xs, &ys) / denominator;
+                let expected = covariance(&xs, &ys, Normalization::Sample) / denominator;
                 prop_assert!((-1.0..=1.0).contains(&result));
                 prop_assert!(approx_eq(result, expected, Tolerance::STRICT));
             }

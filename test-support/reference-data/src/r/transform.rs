@@ -2,7 +2,8 @@
 //!
 //! Select a [`Dataset`] and call [`Dataset::load`] to obtain its observations
 //! and aligned [`Statistics`] entries. Each entry contains a demeaned value,
-//! sample z-score, and one-based average rank, in original observation order.
+//! sample and population z-scores, and one-based average rank, in original
+//! observation order.
 //!
 //! Fixtures and reference values are embedded; loading does not run R or
 //! require network access. Samples are finite, nonconstant, and contain at
@@ -102,11 +103,12 @@ impl Reference {
     }
 }
 
-/// Three statistical transformations of one observation, computed by R.
+/// Statistical transformations of one observation, computed by R.
 #[derive(Debug, Clone, Copy)]
 pub struct Statistics {
     demeaned: f64,
     z_score: f64,
+    population_z_score: f64,
     rank: f64,
 }
 
@@ -123,6 +125,12 @@ impl Statistics {
         self.z_score
     }
 
+    /// Centered observation divided by the population standard deviation.
+    #[must_use]
+    pub const fn population_z_score(&self) -> f64 {
+        self.population_z_score
+    }
+
     /// One-based rank, with equal values receiving their average rank.
     #[must_use]
     pub const fn rank(&self) -> f64 {
@@ -135,7 +143,8 @@ struct Parser {
 }
 
 impl Parser {
-    const REFERENCE_HEADER: &'static str = "case,observation,demeaned,z_score,rank";
+    const REFERENCE_HEADER: &'static str =
+        "case,observation,demeaned,z_score,population_z_score,rank";
 
     const fn new(dataset: Dataset) -> Self {
         Self { dataset }
@@ -180,8 +189,8 @@ impl Parser {
 
             assert_eq!(
                 fields.len(),
-                5,
-                "transform reference rows should contain exactly five fields"
+                6,
+                "transform reference rows should contain exactly six fields"
             );
 
             if fields[0] != case {
@@ -198,11 +207,12 @@ impl Parser {
 
             let demeaned = parse_finite(fields[2], "reference demeaned value");
             let z_score = parse_finite(fields[3], "reference z-score");
-            let rank = parse_finite(fields[4], "reference rank");
+            let population_z_score = parse_finite(fields[4], "reference population z-score");
+            let rank = parse_finite(fields[5], "reference rank");
 
             assert!(rank >= 1.0, "reference ranks should start at one");
 
-            statistics.push(Statistics { demeaned, z_score, rank });
+            statistics.push(Statistics { demeaned, z_score, population_z_score, rank });
         }
 
         statistics

@@ -134,11 +134,13 @@ mod tests {
 
     #[test]
     fn nonfinite_observation_returns_nan_for_each_probability() {
-        for xs in [
+        let samples = [
             &[1.0, f64::NAN],
             &[1.0, f64::INFINITY],
             &[1.0, f64::NEG_INFINITY],
-        ] {
+        ];
+
+        for xs in samples {
             let actual = quantiles(xs, &[0.25, 0.5, 0.75]);
 
             assert_eq!(actual.len(), 3);

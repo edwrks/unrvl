@@ -3,7 +3,8 @@ use std::hint::black_box;
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use rand::SeedableRng;
 use rand::rngs::StdRng;
-use unrvl_stats::moments::{excess_kurtosis, mean, skewness, var};
+use unrvl_stats::Normalization;
+use unrvl_stats::moments::{Kurtosis, ShapeEstimator, kurtosis, mean, skewness, var};
 
 #[path = "support/data.rs"]
 mod data;
@@ -27,15 +28,21 @@ fn benchmark_moments(c: &mut Criterion) {
             });
 
             group.bench_function(BenchmarkId::new("variance", n), |b| {
-                b.iter(|| var(black_box(xs.as_slice())));
+                b.iter(|| var(black_box(xs.as_slice()), Normalization::Sample));
             });
 
             group.bench_function(BenchmarkId::new("skewness", n), |b| {
-                b.iter(|| skewness(black_box(xs.as_slice())));
+                b.iter(|| skewness(black_box(xs.as_slice()), ShapeEstimator::Type2));
             });
 
             group.bench_function(BenchmarkId::new("excess_kurtosis", n), |b| {
-                b.iter(|| excess_kurtosis(black_box(xs.as_slice())));
+                b.iter(|| {
+                    kurtosis(
+                        black_box(xs.as_slice()),
+                        ShapeEstimator::Type2,
+                        Kurtosis::Excess,
+                    )
+                });
             });
 
             // Baseline for a caller who needs all four statistics.
@@ -45,9 +52,9 @@ fn benchmark_moments(c: &mut Criterion) {
 
                     (
                         mean(sample),
-                        var(sample),
-                        skewness(sample),
-                        excess_kurtosis(sample),
+                        var(sample, Normalization::Sample),
+                        skewness(sample, ShapeEstimator::Type2),
+                        kurtosis(sample, ShapeEstimator::Type2, Kurtosis::Excess),
                     )
                 });
             });

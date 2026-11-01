@@ -164,8 +164,8 @@ impl Ecdf {
 mod tests {
     use proptest::prelude::*;
     use test_utils::strategies::{
-        bounded_finite_value, constant_sample, finite_sample, positive_power_of_two_scale,
-        probability,
+        bounded_finite_value, constant_sample, finite_sample, nonfinite_value,
+        positive_power_of_two_scale, probability,
     };
 
     use super::*;
@@ -212,7 +212,7 @@ mod tests {
             #[test]
             fn rejects_nonfinite_observation_at_any_position(
                 mut xs in finite_sample(1),
-                invalid in prop::sample::select(vec![f64::NAN, f64::INFINITY, f64::NEG_INFINITY]),
+                invalid in nonfinite_value(),
                 position in any::<usize>(),
             ) {
                 let index = position % xs.len();

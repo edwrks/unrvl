@@ -3,6 +3,7 @@ use std::hint::black_box;
 use criterion::{BenchmarkId, Criterion, Throughput, criterion_group, criterion_main};
 use rand::SeedableRng;
 use rand::rngs::StdRng;
+use unrvl_stats::Normalization;
 use unrvl_stats::dispersion::{cv, iqr, mad, range, std_dev};
 
 #[path = "support/data.rs"]
@@ -33,22 +34,23 @@ fn benchmark_dispersion(c: &mut Criterion) {
             });
 
             group.bench_function(BenchmarkId::new("std_dev", n), |b| {
-                b.iter(|| std_dev(black_box(xs.as_slice())));
+                b.iter(|| std_dev(black_box(xs.as_slice()), Normalization::Sample));
             });
 
             group.bench_function(BenchmarkId::new("cv", n), |b| {
-                b.iter(|| cv(black_box(xs.as_slice())));
+                b.iter(|| cv(black_box(xs.as_slice()), Normalization::Sample));
             });
 
             group.bench_function(BenchmarkId::new("five_separate_calls", n), |b| {
                 b.iter(|| {
                     let sample = black_box(xs.as_slice());
+
                     (
                         range(sample),
                         iqr(sample),
                         mad(sample),
-                        std_dev(sample),
-                        cv(sample),
+                        std_dev(sample, Normalization::Sample),
+                        cv(sample, Normalization::Sample),
                     )
                 });
             });

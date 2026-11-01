@@ -1,4 +1,5 @@
 use super::{covariance, kendall, pearson, spearman};
+use crate::Normalization;
 
 /// Extension methods for paired association statistics on `[f64]`.
 ///
@@ -10,14 +11,14 @@ use super::{covariance, kendall, pearson, spearman};
 /// let xs = [1.0, 2.0, 3.0];
 /// let ys = [2.0, 4.0, 6.0];
 ///
-/// assert_eq!(xs.covariance(&ys), 2.0);
+/// assert_eq!(xs.covariance(&ys, Normalization::Sample), 2.0);
 /// assert!((xs.pearson(&ys) - 1.0).abs() < 1e-14);
 /// ```
 pub trait AssociationExt {
-    /// Returns the sample covariance with `ys`.
+    /// Returns covariance with `ys` using the selected normalization.
     ///
     /// Equivalent to [`covariance`].
-    fn covariance(&self, ys: &[f64]) -> f64;
+    fn covariance(&self, ys: &[f64], normalization: Normalization) -> f64;
 
     /// Returns the Pearson correlation with `ys`.
     ///
@@ -37,8 +38,8 @@ pub trait AssociationExt {
 }
 
 impl AssociationExt for [f64] {
-    fn covariance(&self, ys: &[f64]) -> f64 {
-        covariance(self, ys)
+    fn covariance(&self, ys: &[f64], normalization: Normalization) -> f64 {
+        covariance(self, ys, normalization)
     }
 
     fn pearson(&self, ys: &[f64]) -> f64 {
@@ -63,21 +64,22 @@ mod tests {
         let xs: &[f64] = &[1.0, 2.0, 4.0, 8.0, 16.0];
         let ys: &[f64] = &[3.0, 1.0, 5.0, 5.0, 2.0];
 
-        let expected = [
-            covariance(xs, ys),
-            pearson(xs, ys),
-            spearman(xs, ys),
-            kendall(xs, ys),
-        ];
+        let expected = [pearson(xs, ys), spearman(xs, ys), kendall(xs, ys)];
 
-        let result = [
-            xs.covariance(ys),
-            xs.pearson(ys),
-            xs.spearman(ys),
-            xs.kendall(ys),
-        ];
+        let result = [xs.pearson(ys), xs.spearman(ys), xs.kendall(ys)];
 
         assert_eq!(result, expected);
+
+        for normalization in [
+            Normalization::Population,
+            Normalization::Sample,
+            Normalization::Ddof(2),
+        ] {
+            assert_eq!(
+                xs.covariance(ys, normalization),
+                covariance(xs, ys, normalization)
+            );
+        }
     }
 
     #[test]
@@ -86,15 +88,18 @@ mod tests {
         let invalid: &[f64] = &[1.0, f64::NAN, 3.0];
 
         for (xs, ys) in [(invalid, valid), (valid, invalid)] {
-            let results = [
-                xs.covariance(ys),
-                xs.pearson(ys),
-                xs.spearman(ys),
-                xs.kendall(ys),
-            ];
+            let results = [xs.pearson(ys), xs.spearman(ys), xs.kendall(ys)];
 
             for result in results {
                 assert!(result.is_nan());
+            }
+
+            for normalization in [
+                Normalization::Population,
+                Normalization::Sample,
+                Normalization::Ddof(2),
+            ] {
+                assert!(xs.covariance(ys, normalization).is_nan());
             }
         }
     }

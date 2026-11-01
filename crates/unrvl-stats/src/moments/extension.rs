@@ -1,7 +1,8 @@
-use crate::moments::excess_kurtosis;
+use crate::Normalization;
 use crate::moments::mean::mean;
 use crate::moments::skewness::skewness;
 use crate::moments::var::var;
+use crate::moments::{Kurtosis, ShapeEstimator, kurtosis};
 
 /// Extension methods for moment statistics on `[f64]`.
 pub trait MomentsExt {
@@ -11,22 +12,20 @@ pub trait MomentsExt {
     /// Equivalent to [`mean`].
     fn mean(&self) -> f64;
 
-    /// Returns the sample variance of a slice using Bessel's correction.
+    /// Returns the variance of a slice with the selected normalization.
     ///
     /// Equivalent to [`var`].
-    fn var(&self) -> f64;
+    fn var(&self, normalization: Normalization) -> f64;
 
-    /// Returns the bias-corrected sample skewness G1 (Joanes & Gill 1998 type
-    /// 2).
+    /// Returns skewness with the selected Joanes-Gill estimator.
     ///
     /// Equivalent to [`skewness`].
-    fn skewness(&self) -> f64;
+    fn skewness(&self, estimator: ShapeEstimator) -> f64;
 
-    /// Returns the bias-corrected sample excess kurtosis G2 (Joanes & Gill 1998
-    /// type 2).
+    /// Returns kurtosis with the selected Joanes-Gill estimator and convention.
     ///
-    /// Equivalent to [`excess_kurtosis`].
-    fn excess_kurtosis(&self) -> f64;
+    /// Equivalent to [`kurtosis`].
+    fn kurtosis(&self, estimator: ShapeEstimator, convention: Kurtosis) -> f64;
 }
 
 impl MomentsExt for [f64] {
@@ -34,16 +33,16 @@ impl MomentsExt for [f64] {
         mean(self)
     }
 
-    fn var(&self) -> f64 {
-        var(self)
+    fn var(&self, normalization: Normalization) -> f64 {
+        var(self, normalization)
     }
 
-    fn skewness(&self) -> f64 {
-        skewness(self)
+    fn skewness(&self, estimator: ShapeEstimator) -> f64 {
+        skewness(self, estimator)
     }
 
-    fn excess_kurtosis(&self) -> f64 {
-        excess_kurtosis(self)
+    fn kurtosis(&self, estimator: ShapeEstimator, convention: Kurtosis) -> f64 {
+        kurtosis(self, estimator, convention)
     }
 }
 
@@ -56,8 +55,28 @@ mod tests {
         let xs: &[f64] = &[1.0, 2.0, 4.0, 8.0, 16.0];
 
         assert_eq!(xs.mean(), mean(xs));
-        assert_eq!(xs.var(), var(xs));
-        assert_eq!(xs.skewness(), skewness(xs));
-        assert_eq!(xs.excess_kurtosis(), excess_kurtosis(xs));
+
+        for normalization in [
+            Normalization::Population,
+            Normalization::Sample,
+            Normalization::Ddof(2),
+        ] {
+            assert_eq!(xs.var(normalization), var(xs, normalization));
+        }
+
+        for estimator in [
+            ShapeEstimator::Type1,
+            ShapeEstimator::Type2,
+            ShapeEstimator::Type3,
+        ] {
+            assert_eq!(xs.skewness(estimator), skewness(xs, estimator));
+
+            for convention in [Kurtosis::Pearson, Kurtosis::Excess] {
+                assert_eq!(
+                    xs.kurtosis(estimator, convention),
+                    kurtosis(xs, estimator, convention)
+                );
+            }
+        }
     }
 }

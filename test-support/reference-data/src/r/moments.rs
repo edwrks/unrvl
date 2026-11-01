@@ -3,8 +3,10 @@
 //! Select a [`Dataset`] and call [`Dataset::load`] to obtain its observations
 //! and corresponding [`Statistics`].
 //!
-//! References cover the arithmetic mean, sample variance with denominator
-//! `n - 1`, and `e1071` Type-2 skewness and excess kurtosis.
+//! References cover the arithmetic mean, variance with denominators `n - 1`,
+//! `n`, and `n - 2`, and Joanes-Gill Type 1/2/3 skewness and kurtosis. Excess
+//! kurtosis is computed by `e1071`; Pearson kurtosis adds three to each
+//! corresponding estimate.
 //!
 //! The fixture corpus is designed to produce finite values for every referenced
 //! statistic. Fixtures and generated results are embedded in the crate; loading
@@ -109,8 +111,17 @@ pub struct Statistics {
     n: usize,
     mean: f64,
     variance: f64,
-    skewness: f64,
-    excess_kurtosis: f64,
+    population_variance: f64,
+    variance_ddof_2: f64,
+    skewness_type_1: f64,
+    skewness_type_2: f64,
+    skewness_type_3: f64,
+    excess_kurtosis_type_1: f64,
+    excess_kurtosis_type_2: f64,
+    excess_kurtosis_type_3: f64,
+    pearson_kurtosis_type_1: f64,
+    pearson_kurtosis_type_2: f64,
+    pearson_kurtosis_type_3: f64,
 }
 
 impl Statistics {
@@ -132,16 +143,73 @@ impl Statistics {
         self.variance
     }
 
-    /// Adjusted sample skewness (e1071 Type 2).
+    /// Population variance with denominator `n`.
     #[must_use]
-    pub const fn skewness(&self) -> f64 {
-        self.skewness
+    pub const fn population_variance(&self) -> f64 {
+        self.population_variance
     }
 
-    /// Adjusted excess kurtosis (e1071 Type 2).
+    /// Variance with denominator `n - 2`, providing a custom-`ddof` reference.
     #[must_use]
-    pub const fn excess_kurtosis(&self) -> f64 {
-        self.excess_kurtosis
+    pub const fn variance_ddof_2(&self) -> f64 {
+        self.variance_ddof_2
+    }
+
+    /// Moment coefficient of skewness using Joanes-Gill Type 1.
+    #[must_use]
+    pub const fn skewness_type_1(&self) -> f64 {
+        self.skewness_type_1
+    }
+
+    /// Adjusted skewness using Joanes-Gill Type 2.
+    #[must_use]
+    pub const fn skewness_type_2(&self) -> f64 {
+        self.skewness_type_2
+    }
+
+    /// Skewness standardized by the sample standard deviation, using
+    /// Joanes-Gill Type 3.
+    #[must_use]
+    pub const fn skewness_type_3(&self) -> f64 {
+        self.skewness_type_3
+    }
+
+    /// Moment coefficient of excess kurtosis using Joanes-Gill Type 1.
+    #[must_use]
+    pub const fn excess_kurtosis_type_1(&self) -> f64 {
+        self.excess_kurtosis_type_1
+    }
+
+    /// Adjusted excess kurtosis using Joanes-Gill Type 2.
+    #[must_use]
+    pub const fn excess_kurtosis_type_2(&self) -> f64 {
+        self.excess_kurtosis_type_2
+    }
+
+    /// Excess kurtosis standardized by the sample standard deviation, using
+    /// Joanes-Gill Type 3.
+    #[must_use]
+    pub const fn excess_kurtosis_type_3(&self) -> f64 {
+        self.excess_kurtosis_type_3
+    }
+
+    /// Pearson kurtosis using Joanes-Gill Type 1.
+    #[must_use]
+    pub const fn pearson_kurtosis_type_1(&self) -> f64 {
+        self.pearson_kurtosis_type_1
+    }
+
+    /// Adjusted Pearson kurtosis using Joanes-Gill Type 2.
+    #[must_use]
+    pub const fn pearson_kurtosis_type_2(&self) -> f64 {
+        self.pearson_kurtosis_type_2
+    }
+
+    /// Pearson kurtosis standardized by the sample standard deviation, using
+    /// Joanes-Gill Type 3.
+    #[must_use]
+    pub const fn pearson_kurtosis_type_3(&self) -> f64 {
+        self.pearson_kurtosis_type_3
     }
 }
 
@@ -150,7 +218,12 @@ struct Parser {
 }
 
 impl Parser {
-    const REFERENCE_HEADER: &'static str = "case,n,mean,variance,skewness,excess_kurtosis";
+    const REFERENCE_HEADER: &'static str = concat!(
+        "case,n,mean,variance,population_variance,variance_ddof_2,",
+        "skewness_type_1,skewness_type_2,skewness_type_3,",
+        "excess_kurtosis_type_1,excess_kurtosis_type_2,excess_kurtosis_type_3,",
+        "pearson_kurtosis_type_1,pearson_kurtosis_type_2,pearson_kurtosis_type_3",
+    );
 
     const fn new(dataset: Dataset) -> Self {
         Self { dataset }
@@ -195,23 +268,61 @@ impl Parser {
 
         assert_eq!(
             fields.len(),
-            6,
-            "moments reference row should contain exactly six fields"
+            15,
+            "moments reference row should contain exactly fifteen fields"
         );
 
         let n = parse_usize(fields[1], "reference n");
         let mean = parse_finite(fields[2], "reference mean");
         let variance = parse_finite(fields[3], "reference variance");
-        let skewness = parse_finite(fields[4], "reference skewness");
-        let excess_kurtosis = parse_finite(fields[5], "reference excess_kurtosis");
+        let population_variance = parse_finite(fields[4], "reference population_variance");
+        let variance_ddof_2 = parse_finite(fields[5], "reference variance_ddof_2");
+        let skewness_type_1 = parse_finite(fields[6], "reference skewness_type_1");
+        let skewness_type_2 = parse_finite(fields[7], "reference skewness_type_2");
+        let skewness_type_3 = parse_finite(fields[8], "reference skewness_type_3");
+        let excess_kurtosis_type_1 = parse_finite(fields[9], "reference excess_kurtosis_type_1");
+        let excess_kurtosis_type_2 = parse_finite(fields[10], "reference excess_kurtosis_type_2");
+        let excess_kurtosis_type_3 = parse_finite(fields[11], "reference excess_kurtosis_type_3");
+        let pearson_kurtosis_type_1 = parse_finite(fields[12], "reference pearson_kurtosis_type_1");
+        let pearson_kurtosis_type_2 = parse_finite(fields[13], "reference pearson_kurtosis_type_2");
+        let pearson_kurtosis_type_3 = parse_finite(fields[14], "reference pearson_kurtosis_type_3");
 
-        Statistics { n, mean, variance, skewness, excess_kurtosis }
+        Statistics {
+            n,
+            mean,
+            variance,
+            population_variance,
+            variance_ddof_2,
+            skewness_type_1,
+            skewness_type_2,
+            skewness_type_3,
+            excess_kurtosis_type_1,
+            excess_kurtosis_type_2,
+            excess_kurtosis_type_3,
+            pearson_kurtosis_type_1,
+            pearson_kurtosis_type_2,
+            pearson_kurtosis_type_3,
+        }
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::Dataset;
+
+    #[test]
+    fn variance_references_match_hand_calculated_sample() {
+        let reference = Dataset::MinimumShapeSample.load();
+        let statistics = reference.statistics();
+
+        assert_eq!(reference.observations(), &[1.0, 2.0, 3.0, 6.0]);
+        assert_eq!(statistics.n(), 4);
+
+        // Mean = 3, centered sum of squares = 4 + 1 + 0 + 9 = 14.
+        // Dividing by n = 4 or n - 2 = 2 gives exact binary results.
+        assert_eq!(statistics.population_variance(), 3.5);
+        assert_eq!(statistics.variance_ddof_2(), 7.0);
+    }
 
     #[test]
     fn all_datasets_load() {

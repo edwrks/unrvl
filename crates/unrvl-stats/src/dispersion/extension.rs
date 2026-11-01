@@ -1,3 +1,4 @@
+use crate::Normalization;
 use crate::dispersion::{cv, iqr, mad, range, std_dev};
 
 /// Extension methods for dispersion statistics on `[f64]`.
@@ -17,15 +18,16 @@ pub trait DispersionExt {
     /// Equivalent to [`mad`].
     fn mad(&self) -> f64;
 
-    /// Returns the sample standard deviation using Bessel's correction.
+    /// Returns the standard deviation with the selected normalization.
     ///
     /// Equivalent to [`std_dev`].
-    fn std_dev(&self) -> f64;
+    fn std_dev(&self, normalization: Normalization) -> f64;
 
-    /// Returns the signed sample coefficient of variation.
+    /// Returns the signed coefficient of variation with the selected
+    /// normalization.
     ///
     /// Equivalent to [`cv`].
-    fn cv(&self) -> f64;
+    fn cv(&self, normalization: Normalization) -> f64;
 }
 
 impl DispersionExt for [f64] {
@@ -41,12 +43,12 @@ impl DispersionExt for [f64] {
         mad(self)
     }
 
-    fn std_dev(&self) -> f64 {
-        std_dev(self)
+    fn std_dev(&self, normalization: Normalization) -> f64 {
+        std_dev(self, normalization)
     }
 
-    fn cv(&self) -> f64 {
-        cv(self)
+    fn cv(&self, normalization: Normalization) -> f64 {
+        cv(self, normalization)
     }
 }
 
@@ -58,19 +60,36 @@ mod tests {
     fn public_extension_methods_match_free_functions() {
         let xs: &[f64] = &[1.0, 2.0, 4.0, 8.0, 16.0];
 
-        let expected = [range(xs), iqr(xs), mad(xs), std_dev(xs), cv(xs)];
-        let result = [xs.range(), xs.iqr(), xs.mad(), xs.std_dev(), xs.cv()];
+        assert_eq!(xs.range(), range(xs));
+        assert_eq!(xs.iqr(), iqr(xs));
+        assert_eq!(xs.mad(), mad(xs));
 
-        assert_eq!(result, expected);
+        for normalization in [
+            Normalization::Population,
+            Normalization::Sample,
+            Normalization::Ddof(2),
+        ] {
+            assert_eq!(xs.std_dev(normalization), std_dev(xs, normalization));
+            assert_eq!(xs.cv(normalization), cv(xs, normalization));
+        }
     }
 
     #[test]
     fn extension_methods_preserve_invalid_input_behavior() {
         let xs: &[f64] = &[1.0, f64::NAN, 3.0];
-        let results = [xs.range(), xs.iqr(), xs.mad(), xs.std_dev(), xs.cv()];
+        let results = [xs.range(), xs.iqr(), xs.mad()];
 
         for result in results {
             assert!(result.is_nan());
+        }
+
+        for normalization in [
+            Normalization::Population,
+            Normalization::Sample,
+            Normalization::Ddof(2),
+        ] {
+            assert!(xs.std_dev(normalization).is_nan());
+            assert!(xs.cv(normalization).is_nan());
         }
     }
 }

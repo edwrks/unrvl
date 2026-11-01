@@ -330,13 +330,15 @@ mod tests {
 
     #[test]
     fn all_datasets_load_with_aligned_observations() {
-        for (dataset, n) in [
+        let datasets = [
             (Dataset::AsymmetricTail, 7),
             (Dataset::Baseline, 8),
             (Dataset::MinimumShapeSample, 4),
             (Dataset::PerfectNegative, 5),
             (Dataset::PerfectPositive, 5),
-        ] {
+        ];
+
+        for (dataset, n) in datasets {
             let reference = dataset.load();
             assert_eq!(reference.dataset(), dataset);
             assert_eq!(reference.x().len(), n);

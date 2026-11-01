@@ -1,5 +1,6 @@
 use reference_data::r::association::matrix::Dataset;
 use test_utils::approx::{Tolerance, assert_approx_eq};
+use unrvl_stats::Normalization;
 use unrvl_stats::association::{correlation_matrix, covariance_matrix};
 
 #[test]
@@ -30,10 +31,11 @@ fn run(dataset: Dataset) {
 
     let tol = Tolerance::STRICT;
 
-    let covariance = covariance_matrix(series).unwrap();
+    let sample_covariance = covariance_matrix(series, Normalization::Sample).unwrap();
+    let population_covariance = covariance_matrix(series, Normalization::Population).unwrap();
     let correlation = correlation_matrix(series).unwrap();
 
-    for matrix in [&covariance, &correlation] {
+    for matrix in [&sample_covariance, &population_covariance, &correlation] {
         assert_eq!(matrix.len(), dimension);
         assert!(matrix.iter().all(|row| row.len() == dimension));
     }
@@ -42,7 +44,12 @@ fn run(dataset: Dataset) {
         let row = entry.row();
         let col = entry.column();
 
-        assert_approx_eq(covariance[row][col], entry.covariance(), tol);
+        assert_approx_eq(sample_covariance[row][col], entry.covariance(), tol);
+        assert_approx_eq(
+            population_covariance[row][col],
+            entry.population_covariance(),
+            tol,
+        );
         assert_approx_eq(correlation[row][col], entry.correlation(), tol);
     }
 }

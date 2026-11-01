@@ -1,3 +1,4 @@
+use crate::Normalization;
 use crate::transform::{demean, ranks, z_score};
 
 /// Extension methods for statistical transformations on `[f64]`.
@@ -7,7 +8,7 @@ use crate::transform::{demean, ranks, z_score};
 ///
 /// let xs = [1.0, 2.0, 3.0];
 /// assert_eq!(xs.demean(), vec![-1.0, 0.0, 1.0]);
-/// assert_eq!(xs.z_score(), vec![-1.0, 0.0, 1.0]);
+/// assert_eq!(xs.z_score(Normalization::Sample), vec![-1.0, 0.0, 1.0]);
 /// assert_eq!(xs.ranks(), vec![1.0, 2.0, 3.0]);
 /// ```
 pub trait TransformExt {
@@ -16,10 +17,10 @@ pub trait TransformExt {
     /// Equivalent to [`demean`].
     fn demean(&self) -> Vec<f64>;
 
-    /// Returns z-scores using the sample standard deviation.
+    /// Returns z-scores using the selected normalization.
     ///
     /// Equivalent to [`z_score`].
-    fn z_score(&self) -> Vec<f64>;
+    fn z_score(&self, normalization: Normalization) -> Vec<f64>;
 
     /// Returns one-based average ranks in original observation order.
     ///
@@ -32,8 +33,8 @@ impl TransformExt for [f64] {
         demean(self)
     }
 
-    fn z_score(&self) -> Vec<f64> {
-        z_score(self)
+    fn z_score(&self, normalization: Normalization) -> Vec<f64> {
+        z_score(self, normalization)
     }
 
     fn ranks(&self) -> Vec<f64> {
@@ -50,17 +51,35 @@ mod tests {
         let xs: &[f64] = &[1.0, 2.0, 4.0, 8.0, 16.0];
 
         assert_eq!(xs.demean(), demean(xs));
-        assert_eq!(xs.z_score(), z_score(xs));
         assert_eq!(xs.ranks(), ranks(xs));
+
+        for normalization in [
+            Normalization::Population,
+            Normalization::Sample,
+            Normalization::Ddof(2),
+        ] {
+            assert_eq!(xs.z_score(normalization), z_score(xs, normalization));
+        }
     }
 
     #[test]
     fn extension_methods_preserve_invalid_input_behavior() {
         let xs: &[f64] = &[1.0, f64::NAN, 3.0];
 
-        let results = [xs.demean(), xs.z_score(), xs.ranks()];
+        let results = [xs.demean(), xs.ranks()];
 
         for result in results {
+            assert_eq!(result.len(), xs.len());
+            assert!(result.into_iter().all(f64::is_nan));
+        }
+
+        for normalization in [
+            Normalization::Population,
+            Normalization::Sample,
+            Normalization::Ddof(2),
+        ] {
+            let result = xs.z_score(normalization);
+
             assert_eq!(result.len(), xs.len());
             assert!(result.into_iter().all(f64::is_nan));
         }

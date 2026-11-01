@@ -1,6 +1,6 @@
 use reference_data::r::dispersion::Dataset;
 use test_utils::approx::{Tolerance, assert_approx_eq};
-use unrvl_stats::dispersion;
+use unrvl_stats::{Normalization, dispersion};
 
 #[test]
 fn asymmetric_tail() {
@@ -22,6 +22,11 @@ fn ties() {
     run(Dataset::Ties);
 }
 
+#[test]
+fn two_point() {
+    run(Dataset::TwoPoint);
+}
+
 fn run(dataset: Dataset) {
     let reference = dataset.load();
     let xs = reference.observations();
@@ -30,12 +35,30 @@ fn run(dataset: Dataset) {
     let iqr = dispersion::iqr(xs);
     let mad = dispersion::mad(xs);
     let range = dispersion::range(xs);
-    let std_dev = dispersion::std_dev(xs);
-    let cv = dispersion::cv(xs);
 
     assert_approx_eq(iqr, stats.iqr(), Tolerance::STRICT);
     assert_approx_eq(mad, stats.mad(), Tolerance::STRICT);
     assert_approx_eq(range, stats.range(), Tolerance::STRICT);
-    assert_approx_eq(std_dev, stats.std_dev(), Tolerance::STRICT);
-    assert_approx_eq(cv, stats.cv(), Tolerance::STRICT);
+
+    let std_dev_cases = [
+        (Normalization::Sample, stats.std_dev()),
+        (Normalization::Population, stats.population_std_dev()),
+    ];
+
+    for (normalization, expected) in std_dev_cases {
+        let actual = dispersion::std_dev(xs, normalization);
+
+        assert_approx_eq(actual, expected, Tolerance::STRICT);
+    }
+
+    let cv_cases = [
+        (Normalization::Sample, stats.cv()),
+        (Normalization::Population, stats.population_cv()),
+    ];
+
+    for (normalization, expected) in cv_cases {
+        let actual = dispersion::cv(xs, normalization);
+
+        assert_approx_eq(actual, expected, Tolerance::STRICT);
+    }
 }

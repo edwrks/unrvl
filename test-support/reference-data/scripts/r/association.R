@@ -3,11 +3,14 @@ generate_association <- function() {
   for (path in fixture_files("association")) {
     case <- case_name(path)
     fixture <- read_fixture(path, c("x", "y"), minimum_n = 2L)
+    x_deviations <- fixture$x - base::mean(fixture$x)
+    y_deviations <- fixture$y - base::mean(fixture$y)
 
     rows[[case]] <- checked_reference(data.frame(
       case = case,
       n = nrow(fixture),
       covariance = stats::cov(fixture$x, fixture$y),
+      population_covariance = base::mean(x_deviations * y_deviations),
       pearson = stats::cor(fixture$x, fixture$y, method = "pearson"),
       spearman = stats::cor(fixture$x, fixture$y, method = "spearman"),
       kendall = stats::cor(fixture$x, fixture$y, method = "kendall")
@@ -24,8 +27,10 @@ generate_association_matrix <- function() {
     case <- case_name(path)
     fixture <- read_matrix_fixture(path, minimum_n = 2L)
     x <- as.matrix(fixture)
+    centered <- base::sweep(x, 2L, base::colMeans(x), FUN = "-")
 
     covariance <- stats::cov(x)
+    population_covariance <- base::crossprod(centered) / nrow(x)
     correlation <- stats::cor(x)
     p <- ncol(x)
 
@@ -42,6 +47,7 @@ generate_association_matrix <- function() {
       row = indices$row - 1L,
       column = indices$column - 1L,
       covariance = covariance[coordinates],
+      population_covariance = population_covariance[coordinates],
       correlation = correlation[coordinates]
     ), path)
   }

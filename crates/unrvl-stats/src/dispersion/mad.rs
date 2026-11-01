@@ -42,7 +42,8 @@ mod tests {
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq};
     use test_utils::strategies::{
-        constant_sample, exact_translation_case, finite_sample, positive_power_of_two_scale,
+        constant_sample, exact_translation_case, finite_sample, nonfinite_value,
+        positive_power_of_two_scale,
     };
 
     use super::*;
@@ -308,7 +309,7 @@ mod tests {
         #[test]
         fn nonfinite_observation_invalidates_sample(
             mut sample in finite_sample(1),
-            value in prop::sample::select(vec![f64::NAN, f64::INFINITY, f64::NEG_INFINITY]),
+            value in nonfinite_value(),
             position in any::<usize>(),
         ) {
             let index = position % sample.len();
