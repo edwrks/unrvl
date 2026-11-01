@@ -74,12 +74,15 @@ fn empirical_distribution_is_available_externally() {
 #[test]
 fn dispersion_functions_and_extension_methods_are_available_externally() {
     let _ = dispersion::iqr(XS);
-    let _ = dispersion::mad(XS);
     let _ = dispersion::range(XS);
 
     let _ = XS.iqr();
-    let _ = XS.mad();
     let _ = XS.range();
+
+    for scale in [MadScale::Raw, MadScale::Normal] {
+        let _ = dispersion::mad(XS, scale);
+        let _ = XS.mad(scale);
+    }
 
     for normalization in [
         Normalization::Sample,

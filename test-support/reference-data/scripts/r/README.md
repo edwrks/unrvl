@@ -23,9 +23,10 @@ Each family script defines its R calculations. Exact CSV headers live in the
   estimate. Sample variance uses `stats::var(x)`; population and custom-divisor
   references use centered sums directly: `mean((x - mean(x))^2)` and
   `sum((x - mean(x))^2) / (length(x) - 2)`.
-- [dispersion.R](dispersion.R): range, Type 7 IQR, **raw** MAD using
-  `stats::mad(x, constant = 1)`, and sample/population standard deviations and
-  CVs. Sample standard deviation uses `stats::sd(x)`; population standard
+- [dispersion.R](dispersion.R): range, Type 7 IQR, raw and normal-consistent MAD
+  using `stats::mad` with `constant = 1` and `constant = 1 / stats::qnorm(0.75)`,
+  respectively, and sample/population standard deviations and CVs.
+  Sample standard deviation uses `stats::sd(x)`; population standard
   deviation uses `sqrt(mean((x - mean(x))^2))`. Both CVs divide by the signed
   mean and are ratios, not percentages.
 - [quantiles.R](quantiles.R): `stats::quantile(x, probs, type = 7)` at the

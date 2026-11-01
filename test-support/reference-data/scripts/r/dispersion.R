@@ -15,8 +15,11 @@ generate_dispersion <- function() {
       # Type 7 is the quantile convention used by the conformance suite.
       iqr = stats::IQR(x, type = 7),
 
-      # Rust exposes raw MAD. Disable R's normal-consistency scaling.
+      # Raw and normal-consistent MAD use explicit scaling constants.
       mad = stats::mad(x, center = stats::median(x), constant = 1),
+      scaled_mad = stats::mad(
+        x, center = stats::median(x), constant = 1 / stats::qnorm(0.75)
+      ),
 
       std_dev = sample_std_dev,
       population_std_dev = population_std_dev,

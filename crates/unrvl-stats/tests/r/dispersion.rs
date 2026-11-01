@@ -1,5 +1,6 @@
 use reference_data::r::dispersion::Dataset;
 use test_utils::approx::{Tolerance, assert_approx_eq};
+use unrvl_stats::dispersion::MadScale;
 use unrvl_stats::{Normalization, dispersion};
 
 #[test]
@@ -33,12 +34,21 @@ fn run(dataset: Dataset) {
     let stats = reference.statistics();
 
     let iqr = dispersion::iqr(xs);
-    let mad = dispersion::mad(xs);
     let range = dispersion::range(xs);
 
     assert_approx_eq(iqr, stats.iqr(), Tolerance::STRICT);
-    assert_approx_eq(mad, stats.mad(), Tolerance::STRICT);
     assert_approx_eq(range, stats.range(), Tolerance::STRICT);
+
+    let mad_cases = [
+        (MadScale::Raw, stats.mad()),
+        (MadScale::Normal, stats.scaled_mad()),
+    ];
+
+    for (scale, expected) in mad_cases {
+        let actual = dispersion::mad(xs, scale);
+
+        assert_approx_eq(actual, expected, Tolerance::STRICT);
+    }
 
     let std_dev_cases = [
         (Normalization::Sample, stats.std_dev()),
