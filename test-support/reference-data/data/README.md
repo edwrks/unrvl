@@ -35,6 +35,8 @@ Key restrictions follow from the statistics generated together:
 - Association and transform fixtures require at least two observations and
   nonconstant series for correlations and z-scores. Linearly dependent matrix
   columns are valid; matrix invertibility is not required.
+- Regression requires at least three pairs and nonconstant predictors and
+  responses for finite R² and adjusted R².
 - Constant and singleton samples are valid empirical fixtures. Their query and
   probability lists live in [empirical.R](../scripts/r/empirical.R).
 

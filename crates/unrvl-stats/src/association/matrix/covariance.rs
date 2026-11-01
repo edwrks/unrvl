@@ -48,9 +48,8 @@ use crate::association::covariance::restore_units;
 /// # Examples
 ///
 /// ```
-/// use unrvl_stats::Normalization;
-/// use unrvl_stats::association::{MatrixError, covariance_matrix};
-///
+/// # use unrvl_stats::Normalization;
+/// # use unrvl_stats::association::{MatrixError, covariance_matrix};
 /// // Three observations of two variables, x and y.
 /// let x = [1.0, 2.0, 3.0];
 /// let y = [2.0, 4.0, 6.0];

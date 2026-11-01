@@ -1,8 +1,4 @@
-//! Numerical, statistical, time-series, and risk analysis tools for Rust.
-//!
-//! Enable the `numerics`, `stats`, `timeseries`, or `risk` feature to expose
-//! the corresponding module. The `full` feature enables all four. No features
-//! are enabled by default.
+#![doc = include_str!("../docs/index.md")]
 
 #[cfg(feature = "numerics")]
 pub mod numerics;

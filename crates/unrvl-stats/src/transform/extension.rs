@@ -4,8 +4,7 @@ use crate::transform::{demean, ranks, z_score};
 /// Extension methods for statistical transformations on `[f64]`.
 ///
 /// ```
-/// use unrvl_stats::prelude::*;
-///
+/// # use unrvl_stats::prelude::*;
 /// let xs = [1.0, 2.0, 3.0];
 /// assert_eq!(xs.demean(), vec![-1.0, 0.0, 1.0]);
 /// assert_eq!(xs.z_score(Normalization::Sample), vec![-1.0, 0.0, 1.0]);

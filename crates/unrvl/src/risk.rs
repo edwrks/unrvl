@@ -1,6 +1,4 @@
-//! Financial risk measures and analysis.
-//!
-//! This module is under development and does not yet expose a public API.
+#![doc = include_str!("../docs/risk.md")]
 
 #[allow(unused_imports)]
 pub use unrvl_risk::*;

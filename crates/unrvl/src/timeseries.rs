@@ -1,6 +1,4 @@
-//! Time-series transformations and analysis.
-//!
-//! This module is under development and does not yet expose a public API.
+#![doc = include_str!("../docs/timeseries.md")]
 
 #[allow(unused_imports)]
 pub use unrvl_timeseries::*;

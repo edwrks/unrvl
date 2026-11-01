@@ -53,8 +53,7 @@ pub enum Kurtosis {
 /// # Examples
 ///
 /// ```
-/// use unrvl_stats::moments::{Kurtosis, ShapeEstimator, kurtosis};
-///
+/// # use unrvl_stats::moments::{Kurtosis, ShapeEstimator, kurtosis};
 /// let xs = [1.0, 2.0, 3.0, 6.0];
 /// let excess = kurtosis(&xs, ShapeEstimator::Type1, Kurtosis::Excess);
 /// let pearson = kurtosis(&xs, ShapeEstimator::Type1, Kurtosis::Pearson);

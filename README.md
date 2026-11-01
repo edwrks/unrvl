@@ -18,14 +18,14 @@ The facade has no default features. Components can be enabled individually:
 
 ```toml
 [dependencies]
-unrvl = { version = "0.0.2", features = ["stats"] }
+unrvl = { version = "0.0.3", features = ["stats"] }
 ```
 
 or fully enabled:
 
 ```toml
 [dependencies]
-unrvl = { version = "0.0.2", features = ["full"] }
+unrvl = { version = "0.0.3", features = ["full"] }
 ```
 
 and accessed through their corresponding module:

@@ -1,6 +1,7 @@
 //! Ordinary least squares with one predictor and an intercept.
 
 use thiserror::Error;
+use unrvl_numerics::convert::usize_to_f64;
 use unrvl_numerics::scaling::{binary_exponent, scale_power_of_two};
 use unrvl_numerics::summation::NeumaierSum;
 
@@ -104,8 +105,8 @@ impl SimpleLinearRegression {
     ///
     /// Returns an input error for unequal lengths, fewer than two pairs,
     /// non-finite observations, or a constant predictor. Returns
-    /// [`SimpleLinearError::NumericalFailure`] for non-finite coefficients
-    /// or unusable intermediate results.
+    /// [`SimpleLinearError::NumericalFailure`] for non-finite coefficients or
+    /// unusable intermediate results.
     ///
     /// # Panics
     ///
@@ -229,6 +230,45 @@ impl SimpleLinearRegression {
     #[must_use]
     pub const fn r_squared(&self) -> f64 {
         self.r_squared
+    }
+
+    /// Returns adjusted R² for the observations used to fit this model.
+    ///
+    /// For one predictor and an intercept, the adjustment is
+    /// `1 - (1 - R²) * (n - 1) / (n - 2)`, where `n` is the fitted observation
+    /// count. Values may be negative and are not clamped to `[0, 1]`.
+    ///
+    /// Returns `NaN` for at most two observations or undefined
+    /// [`R²`](Self::r_squared), including a constant response.
+    ///
+    /// Uses the stored R² and observation count. Evaluates the equivalent
+    /// `((n - 1) * R² - 1) / (n - 2)` with a fused multiply-add in the
+    /// numerator to reduce intermediate rounding near zero. Rounding in the
+    /// stored R² still carries through; a perfect fit can round slightly below
+    /// one.
+    ///
+    /// Uses `O(1)` time and additional memory.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use unrvl_stats::regression::simple_linear::SimpleLinearRegression;
+    /// let xs = [-1.0, 0.0, 1.0];
+    /// let ys = [1.0, -2.0, 1.0];
+    /// let model = SimpleLinearRegression::fit(&xs, &ys).unwrap();
+    /// assert_eq!(model.adjusted_r_squared(), -1.0);
+    /// ```
+    #[must_use]
+    pub fn adjusted_r_squared(&self) -> f64 {
+        let n = self.observation_count;
+        if n <= 2 {
+            return f64::NAN;
+        }
+
+        let n_minus_1 = usize_to_f64(n - 1);
+        let n_minus_2 = usize_to_f64(n - 2);
+
+        n_minus_1.mul_add(self.r_squared, -1.0) / n_minus_2
     }
 
     /// Returns the number of pairs used to fit this model.
@@ -800,6 +840,125 @@ mod tests {
 
                 prop_assert!(approx_eq(actual, expected, Tolerance::STRICT));
                 prop_assert!((0.0..=1.0).contains(&actual));
+            }
+        }
+    }
+
+    mod adjusted_r_squared {
+        use unrvl_numerics::convert::usize_to_f64;
+        use unrvl_numerics::summation::NeumaierSumExt;
+
+        use super::*;
+        use crate::moments::mean;
+
+        #[test]
+        fn is_undefined_for_two_observations() {
+            let xs = [0.0, 1.0];
+            let ys = [1.0, 3.0];
+
+            let model = SimpleLinearRegression::fit(&xs, &ys).unwrap();
+
+            assert!(model.r_squared().is_finite());
+            assert!(model.adjusted_r_squared().is_nan());
+        }
+
+        #[test]
+        fn is_undefined_for_a_constant_response() {
+            let xs = [-2.0, 0.0, 1.0, 3.0];
+            let values = [0.0, f64::from_bits(1), -f64::MAX, f64::MAX];
+
+            for value in values {
+                let ys = [value; 4];
+                let model = SimpleLinearRegression::fit(&xs, &ys).unwrap();
+
+                assert!(model.adjusted_r_squared().is_nan());
+            }
+        }
+
+        #[test]
+        fn is_negative_one_for_three_pairs_with_zero_covariance() {
+            let xs = [-1.0, 0.0, 1.0];
+            let ys = [1.0, -2.0, 1.0];
+
+            let model = SimpleLinearRegression::fit(&xs, &ys).unwrap();
+
+            assert_eq!(model.adjusted_r_squared(), -1.0);
+        }
+
+        #[test]
+        fn computes_adjustment_for_a_noisy_fit() {
+            let xs = [0.0, 0.0, 2.0, 2.0];
+            let ys = [0.0, 2.0, 2.0, 4.0];
+
+            let model = SimpleLinearRegression::fit(&xs, &ys).unwrap();
+
+            // The fitted line is y = x + 1. SSE = 4 and SST = 8, so the
+            // residual and total mean squares are 2 and 8/3: adjusted R² = 1/4.
+            assert_approx_eq(model.adjusted_r_squared(), 0.25, Tolerance::VERY_STRICT);
+        }
+
+        #[test]
+        fn remains_accurate_for_perfect_and_near_perfect_fits() {
+            let xs = [-1.0, 0.0, 1.0];
+
+            for delta in [0.0, 2.0_f64.powi(-20)] {
+                let ys = [-1.0, delta, 1.0];
+                let model = SimpleLinearRegression::fit(&xs, &ys).unwrap();
+
+                // SSE = 2*delta²/3 and SST = 2 + 2*delta²/3. With three
+                // observations, adjusted R² = (3 - delta²) / (3 + delta²).
+                let delta_squared = delta * delta;
+                let expected = (3.0 - delta_squared) / (3.0 + delta_squared);
+
+                assert_approx_eq(model.adjusted_r_squared(), expected, Tolerance::VERY_STRICT);
+            }
+        }
+
+        #[test]
+        fn resolves_small_positive_and_negative_adjusted_values() {
+            let xs = [-1.0, -1.0, 1.0, 1.0];
+            let delta = 2.0_f64.powi(-40);
+            let perturbations = [-delta, 0.0, delta];
+
+            for perturbation in perturbations {
+                let ys = [-3.0, -1.0, -1.0, -1.0 + perturbation];
+                let model = SimpleLinearRegression::fit(&xs, &ys).unwrap();
+
+                // Sxx = 4, Sxy = 2 + d, Syy = 3 + d + 3*d²/4. The exact
+                // adjusted R² is 4*d / (12 + 4*d + 3*d²), about ±3e-13.
+                let denominator = 4.0_f64.mul_add(perturbation, 12.0);
+                let denominator = 3.0_f64.mul_add(perturbation.powi(2), denominator);
+                let expected = 4.0 * perturbation / denominator;
+
+                // Stored R² limits absolute accuracy near zero. This allowance
+                // is small enough to reject rounding either nonzero case to
+                // zero.
+                assert_approx_eq(model.adjusted_r_squared(), expected, Tolerance::VERY_STRICT);
+            }
+        }
+
+        proptest! {
+            #[test]
+            fn agrees_with_residual_and_total_mean_squares(
+                (xs, ys) in finite_paired_samples(3),
+            ) {
+                prop_assume!(nonconstant(&xs));
+                prop_assume!(nonconstant(&ys));
+
+                let model = SimpleLinearRegression::fit(&xs, &ys).unwrap();
+                let residuals = model.residuals(&xs, &ys).unwrap();
+                let y_mean = mean(&ys);
+
+                let sse = residuals.iter().map(|r| r * r).neumaier_sum();
+                let sst = ys.iter().map(|y| (y - y_mean).powi(2)).neumaier_sum();
+                let residual_mean_square = sse / usize_to_f64(xs.len() - 2);
+                let total_mean_square = sst / usize_to_f64(xs.len() - 1);
+                let expected = 1.0 - residual_mean_square / total_mean_square;
+                let actual = model.adjusted_r_squared();
+                let lower_bound = -1.0 / usize_to_f64(xs.len() - 2);
+
+                prop_assert!(approx_eq(actual, expected, Tolerance::STRICT));
+                prop_assert!((lower_bound..=1.0).contains(&actual));
             }
         }
     }

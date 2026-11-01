@@ -39,9 +39,8 @@ use crate::internal::second_moment::SecondMoment;
 /// # Examples
 ///
 /// ```
-/// use unrvl_stats::Normalization;
-/// use unrvl_stats::dispersion::std_dev;
-///
+/// # use unrvl_stats::Normalization;
+/// # use unrvl_stats::dispersion::std_dev;
 /// let xs = [1.0, 3.0];
 /// assert_eq!(std_dev(&xs, Normalization::Population), 1.0);
 /// assert_eq!(std_dev(&xs, Normalization::Sample), 2.0_f64.sqrt());

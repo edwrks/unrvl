@@ -31,6 +31,7 @@ fn simple_linear_regression_is_available_externally() {
     let _ = model.slope();
     let _ = model.intercept();
     let _ = model.r_squared();
+    let _ = model.adjusted_r_squared();
     let _ = model.observation_count();
     let _ = model.predict(1.0);
     let _ = model.residuals(XS, YS).unwrap();

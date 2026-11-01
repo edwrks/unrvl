@@ -40,8 +40,7 @@ use crate::moments::ShapeEstimator;
 /// # Examples
 ///
 /// ```
-/// use unrvl_stats::moments::{ShapeEstimator, skewness};
-///
+/// # use unrvl_stats::moments::{ShapeEstimator, skewness};
 /// let xs = [1.0, 3.0];
 /// assert_eq!(skewness(&xs, ShapeEstimator::Type1), 0.0);
 /// assert_eq!(skewness(&xs, ShapeEstimator::Type3), 0.0);
