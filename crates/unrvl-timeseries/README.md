@@ -1,3 +1,3 @@
 # Timeseries
 
-Time-series transformations, rolling analysis, and temporal statistics.
+Exact timestamps and primitives for time-series analysis.
