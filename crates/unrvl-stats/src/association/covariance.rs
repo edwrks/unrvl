@@ -43,9 +43,8 @@ use crate::internal::deviations::CenteredSample;
 /// # Examples
 ///
 /// ```
-/// use unrvl_stats::Normalization;
-/// use unrvl_stats::association::covariance;
-///
+/// # use unrvl_stats::Normalization;
+/// # use unrvl_stats::association::covariance;
 /// let xs = [1.0, 2.0, 3.0];
 /// let ys = [2.0, 4.0, 6.0];
 /// assert_eq!(covariance(&xs, &ys, Normalization::Sample), 2.0);

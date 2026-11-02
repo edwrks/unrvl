@@ -43,9 +43,10 @@ Each family script defines its R calculations. Exact CSV headers live in the
   population covariance from `crossprod(centered) / nrow(x)` with centered
   columns, and Pearson correlation.
 - [regression.R](regression.R): default `stats::lm(y ~ x)` includes an
-  intercept. Coefficients and R² come from the fit and its summary; observation
-  references use `stats::predict` and `stats::residuals`. The slope is also the
-  beta reference.
+  intercept. Coefficients, R², and adjusted R² come from the fit and its
+  summary. Adjusted R² uses `1 - (1 - R²) * (n - 1) / (n - 2)` and can be
+  negative. Observation references use `stats::predict` and `stats::residuals`.
+  The slope is also the beta reference.
 - [transform.R](transform.R): `x - mean(x)`, sample z-scores from
   `as.numeric(scale(x))`, population z-scores from
   `centered / sqrt(mean(centered^2))`, and `rank(x, ties.method = "average")`.

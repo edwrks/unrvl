@@ -41,9 +41,8 @@ use crate::internal::second_moment::SecondMoment;
 /// # Examples
 ///
 /// ```
-/// use unrvl_stats::Normalization;
-/// use unrvl_stats::dispersion::cv;
-///
+/// # use unrvl_stats::Normalization;
+/// # use unrvl_stats::dispersion::cv;
 /// let xs = [1.0, 3.0];
 /// assert_eq!(cv(&xs, Normalization::Population), 0.5);
 /// assert_eq!(cv(&xs, Normalization::Sample), 2.0_f64.sqrt() / 2.0);

@@ -10,8 +10,7 @@ use unrvl_numerics::convert::usize_to_f64;
 /// interpolation. Queries do not allocate.
 ///
 /// ```
-/// use unrvl_stats::distribution::empirical::Ecdf;
-///
+/// # use unrvl_stats::distribution::empirical::Ecdf;
 /// let distribution = Ecdf::new(&[10.0, 0.0, 10.0, 20.0])?;
 ///
 /// assert_eq!(distribution.cdf(10.0), 0.75);

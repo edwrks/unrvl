@@ -27,6 +27,11 @@ fn perfect_positive() {
     run(Dataset::PerfectPositive);
 }
 
+#[test]
+fn zero_covariance() {
+    run(Dataset::ZeroCovariance);
+}
+
 fn run(dataset: Dataset) {
     let reference = dataset.load();
     let statistics = reference.statistics();
@@ -36,6 +41,11 @@ fn run(dataset: Dataset) {
     assert_approx_eq(model.intercept(), statistics.intercept(), Tolerance::STRICT);
     assert_approx_eq(model.slope(), statistics.slope(), Tolerance::STRICT);
     assert_approx_eq(model.r_squared(), statistics.r_squared(), Tolerance::STRICT);
+    assert_approx_eq(
+        model.adjusted_r_squared(),
+        statistics.adjusted_r_squared(),
+        Tolerance::STRICT,
+    );
 
     let predictions: Vec<_> = reference.x().iter().map(|&x| model.predict(x)).collect();
 

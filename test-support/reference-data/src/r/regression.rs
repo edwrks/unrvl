@@ -23,6 +23,9 @@ pub enum Dataset {
 
     /// An exact line with positive slope.
     PerfectPositive,
+
+    /// Three observations with zero covariance and adjusted R² of minus one.
+    ZeroCovariance,
 }
 
 impl Dataset {
@@ -48,6 +51,7 @@ impl Dataset {
             Self::MinimumShapeSample => "minimum-shape-sample",
             Self::PerfectNegative => "perfect-negative",
             Self::PerfectPositive => "perfect-positive",
+            Self::ZeroCovariance => "zero-covariance",
         }
     }
 
@@ -67,6 +71,9 @@ impl Dataset {
             }
             Self::PerfectPositive => {
                 include_str!("../../data/fixtures/r/regression/perfect-positive.csv")
+            }
+            Self::ZeroCovariance => {
+                include_str!("../../data/fixtures/r/regression/zero-covariance.csv")
             }
         }
     }
@@ -128,6 +135,7 @@ pub struct Statistics {
     intercept: f64,
     slope: f64,
     r_squared: f64,
+    adjusted_r_squared: f64,
 }
 
 impl Statistics {
@@ -154,6 +162,14 @@ impl Statistics {
     pub const fn r_squared(&self) -> f64 {
         self.r_squared
     }
+
+    /// Adjusted R² for one predictor and an intercept.
+    ///
+    /// Uses `1 - (1 - R²) * (n - 1) / (n - 2)` and may be negative.
+    #[must_use]
+    pub const fn adjusted_r_squared(&self) -> f64 {
+        self.adjusted_r_squared
+    }
 }
 
 struct Parser {
@@ -162,7 +178,7 @@ struct Parser {
 
 impl Parser {
     const FIXTURE_HEADER: &'static str = "x,y";
-    const REFERENCE_HEADER: &'static str = "case,n,intercept,slope,r_squared";
+    const REFERENCE_HEADER: &'static str = "case,n,intercept,slope,r_squared,adjusted_r_squared";
     const OBSERVATION_REFERENCE_HEADER: &'static str = "case,observation,prediction,residual";
 
     const fn new(dataset: Dataset) -> Self {
@@ -226,8 +242,8 @@ impl Parser {
         }
 
         assert!(
-            x.len() >= 2,
-            "regression fixture should contain at least two observations"
+            x.len() >= 3,
+            "regression fixture should contain at least three observations"
         );
 
         (x, y)
@@ -254,8 +270,8 @@ impl Parser {
 
             assert_eq!(
                 fields.len(),
-                5,
-                "regression reference rows should contain exactly five fields"
+                6,
+                "regression reference rows should contain exactly six fields"
             );
 
             if fields[0] != case {
@@ -272,6 +288,7 @@ impl Parser {
                 intercept: parse_finite(fields[2], "reference intercept"),
                 slope: parse_finite(fields[3], "reference slope"),
                 r_squared: parse_probability(fields[4], "reference R²"),
+                adjusted_r_squared: parse_finite(fields[5], "reference adjusted R²"),
             });
         }
 
@@ -336,6 +353,7 @@ mod tests {
             (Dataset::MinimumShapeSample, 4),
             (Dataset::PerfectNegative, 5),
             (Dataset::PerfectPositive, 5),
+            (Dataset::ZeroCovariance, 3),
         ];
 
         for (dataset, n) in datasets {

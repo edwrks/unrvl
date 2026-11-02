@@ -37,9 +37,8 @@ use crate::internal::second_moment::SecondMoment;
 /// # Examples
 ///
 /// ```
+/// # use unrvl_stats::Normalization;
 /// # use unrvl_stats::transform::z_score;
-/// use unrvl_stats::Normalization;
-///
 /// let xs = [3.0, 1.0, 2.0];
 /// assert_eq!(z_score(&xs, Normalization::Sample), vec![1.0, -1.0, 0.0]);
 /// assert_eq!(

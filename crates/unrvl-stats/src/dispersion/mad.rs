@@ -42,8 +42,7 @@ pub enum MadScale {
 /// # Examples
 ///
 /// ```
-/// use unrvl_stats::dispersion::{MadScale, mad};
-///
+/// # use unrvl_stats::dispersion::{MadScale, mad};
 /// let xs = [1.0, 2.0, 3.0, 6.0];
 /// assert_eq!(mad(&xs, MadScale::Raw), 1.0);
 /// assert!((mad(&xs, MadScale::Normal) - 1.482602218505602).abs() < 1e-14);

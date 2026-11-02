@@ -4,11 +4,12 @@ generate_regression <- function() {
 
   for (path in fixture_files("regression")) {
     case <- case_name(path)
-    fixture <- read_fixture(path, c("x", "y"), minimum_n = 2L)
+    fixture <- read_fixture(path, c("x", "y"), minimum_n = 3L)
 
     # Fit y as a straight line in x, including an intercept, using R's defaults.
     fit <- stats::lm(y ~ x, data = fixture)
     coefficients <- stats::coef(fit)
+    fit_summary <- summary(fit)
 
     # One row per fixture describes the fitted line and its overall fit.
     fit_rows[[case]] <- checked_reference(data.frame(
@@ -16,7 +17,8 @@ generate_regression <- function() {
       n = nrow(fixture),
       intercept = coefficients[["(Intercept)"]],
       slope = coefficients[["x"]],
-      r_squared = summary(fit)$r.squared
+      r_squared = fit_summary$r.squared,
+      adjusted_r_squared = fit_summary$adj.r.squared
     ), path)
 
     # One row per observation keeps its prediction and residual together.
