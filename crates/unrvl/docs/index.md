@@ -17,7 +17,7 @@ unrvl = { version = "0.0.3", features = ["numerics", "stats"] }
 | ------------ | ------------------- | ----------------- |
 | `numerics`   | `unrvl::numerics`   | Public API        |
 | `stats`      | `unrvl::stats`      | Public API        |
-| `timeseries` | `unrvl::timeseries` | No public API yet |
+| `timeseries` | `unrvl::timeseries` | Timestamp API     |
 | `risk`       | `unrvl::risk`       | No public API yet |
 
 The `full` feature enables all four modules. Enabling `stats` alone does not

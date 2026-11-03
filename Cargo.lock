@@ -788,6 +788,9 @@ dependencies = [
 [[package]]
 name = "unrvl-timeseries"
 version = "0.0.3"
+dependencies = [
+ "thiserror",
+]
 
 [[package]]
 name = "wait-timeout"
