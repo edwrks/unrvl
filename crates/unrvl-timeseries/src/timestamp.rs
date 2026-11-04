@@ -161,8 +161,8 @@ mod tests {
         fn rejects_unrepresentable_seconds() {
             // First whole-second magnitude that overflows when converted to
             // nanoseconds.
-            let first_out_of_range = 9_223_372_037;
-            let cases = [i64::MIN, -first_out_of_range, first_out_of_range, i64::MAX];
+            let first_overflowing = i64::MAX / 1_000_000_000 + 1;
+            let cases = [i64::MIN, -first_overflowing, first_overflowing, i64::MAX];
 
             for value in cases {
                 let expected = TimestampError::SecondsOutOfRange { value };
@@ -175,14 +175,14 @@ mod tests {
         fn converts_seconds_exactly_including_range_boundaries() {
             // Largest whole-second magnitude that still fits in signed
             // nanoseconds.
-            let boundary_secs = 9_223_372_036;
-            let boundary_nanos = 9_223_372_036_000_000_000;
+            let max_secs_in_range = i64::MAX / 1_000_000_000;
+            let max_secs_in_nanos = 9_223_372_036_000_000_000;
             let cases = [
-                (-boundary_secs, -boundary_nanos),
+                (-max_secs_in_range, -max_secs_in_nanos),
                 (-1, -1_000_000_000),
                 (0, 0),
                 (1, 1_000_000_000),
-                (boundary_secs, boundary_nanos),
+                (max_secs_in_range, max_secs_in_nanos),
             ];
 
             for (value, expected) in cases {
@@ -199,8 +199,8 @@ mod tests {
         #[test]
         fn rejects_unrepresentable_milliseconds() {
             // First whole-millisecond magnitude that overflows in nanoseconds.
-            let first_out_of_range = 9_223_372_036_855;
-            let cases = [i64::MIN, -first_out_of_range, first_out_of_range, i64::MAX];
+            let first_overflowing = i64::MAX / 1_000_000 + 1;
+            let cases = [i64::MIN, -first_overflowing, first_overflowing, i64::MAX];
 
             for value in cases {
                 let expected = TimestampError::MillisecondsOutOfRange { value };
@@ -213,14 +213,14 @@ mod tests {
         fn converts_milliseconds_exactly_including_range_boundaries() {
             // Largest whole-millisecond magnitude that still fits in signed
             // nanoseconds.
-            let boundary_millis = 9_223_372_036_854;
-            let boundary_nanos = 9_223_372_036_854_000_000;
+            let max_millis_in_range = i64::MAX / 1_000_000;
+            let max_millis_in_nanos = 9_223_372_036_854_000_000;
             let cases = [
-                (-boundary_millis, -boundary_nanos),
+                (-max_millis_in_range, -max_millis_in_nanos),
                 (-1, -1_000_000),
                 (0, 0),
                 (1, 1_000_000),
-                (boundary_millis, boundary_nanos),
+                (max_millis_in_range, max_millis_in_nanos),
             ];
 
             for (value, expected) in cases {
@@ -237,8 +237,8 @@ mod tests {
         #[test]
         fn rejects_unrepresentable_microseconds() {
             // First whole-microsecond magnitude that overflows in nanoseconds.
-            let first_out_of_range = 9_223_372_036_854_776;
-            let cases = [i64::MIN, -first_out_of_range, first_out_of_range, i64::MAX];
+            let first_overflowing = i64::MAX / 1_000 + 1;
+            let cases = [i64::MIN, -first_overflowing, first_overflowing, i64::MAX];
 
             for value in cases {
                 let expected = TimestampError::MicrosecondsOutOfRange { value };
@@ -251,14 +251,14 @@ mod tests {
         fn converts_microseconds_exactly_including_range_boundaries() {
             // Largest whole-microsecond magnitude that still fits in signed
             // nanoseconds.
-            let boundary_micros = 9_223_372_036_854_775;
-            let boundary_nanos = 9_223_372_036_854_775_000;
+            let max_micros_in_range = i64::MAX / 1_000;
+            let max_micros_in_nanos = 9_223_372_036_854_775_000;
             let cases = [
-                (-boundary_micros, -boundary_nanos),
+                (-max_micros_in_range, -max_micros_in_nanos),
                 (-1, -1_000),
                 (0, 0),
                 (1, 1_000),
-                (boundary_micros, boundary_nanos),
+                (max_micros_in_range, max_micros_in_nanos),
             ];
 
             for (value, expected) in cases {
@@ -277,8 +277,8 @@ mod tests {
             // MIN to the epoch is 2^63 ns, one more than i64::MAX.
             let min_to_epoch = Duration::from_nanos(1_u64 << 63);
 
-            // 2^64 ns is one nanosecond longer than the full timestamp span.
-            let beyond_full_span = Duration::new(18_446_744_073, 709_551_616);
+            // One nanosecond beyond the full i64 timestamp span.
+            let beyond_full_span = Duration::from_nanos(u64::MAX) + Duration::from_nanos(1);
 
             let cases = [
                 (Timestamp::MAX, Duration::from_nanos(1)),
@@ -341,8 +341,8 @@ mod tests {
             // Subtracting 2^63 ns from the epoch reaches MIN; starting at -1
             // overflows.
             let min_to_epoch = Duration::from_nanos(1_u64 << 63);
-            // 2^64 ns is one nanosecond longer than the full timestamp span.
-            let beyond_full_span = Duration::new(18_446_744_073, 709_551_616);
+            // One nanosecond beyond the full i64 timestamp span.
+            let beyond_full_span = Duration::from_nanos(u64::MAX) + Duration::from_nanos(1);
 
             let cases = [
                 (Timestamp::MIN, Duration::from_nanos(1)),
@@ -464,7 +464,7 @@ mod tests {
     fn nanoseconds_round_trip_without_precision_loss() {
         // 2^53 + 1 is the first positive integer that f64 cannot represent
         // exactly.
-        let beyond_f64_precision = 9_007_199_254_740_993;
+        let beyond_f64_precision = (1_i64 << 53) + 1;
         let cases = [
             i64::MIN,
             i64::MIN + 1,

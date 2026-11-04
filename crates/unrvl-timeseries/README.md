@@ -1,3 +1,3 @@
 # Timeseries
 
-Exact timestamps and primitives for time-series analysis.
+Exact timestamps and validated numerical series for time-series analysis.
