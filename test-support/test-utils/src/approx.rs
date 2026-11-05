@@ -152,6 +152,67 @@ pub fn approx_eq(x: f64, y: f64, tolerance: Tolerance) -> bool {
 mod tests {
     use super::*;
 
+    mod tolerance {
+        use super::*;
+
+        #[test]
+        #[should_panic(expected = "absolute tolerance must be finite")]
+        fn rejects_nonfinite_absolute_tolerance() {
+            let _ = Tolerance::new(f64::INFINITY, 0.0);
+        }
+
+        #[test]
+        #[should_panic(expected = "absolute tolerance must be non-negative")]
+        fn rejects_negative_absolute_tolerance() {
+            let _ = Tolerance::new(-1.0, 0.0);
+        }
+
+        #[test]
+        #[should_panic(expected = "relative tolerance must be finite")]
+        fn rejects_nonfinite_relative_tolerance() {
+            let _ = Tolerance::new(0.0, f64::NAN);
+        }
+
+        #[test]
+        #[should_panic(expected = "relative tolerance must be non-negative")]
+        fn rejects_negative_relative_tolerance() {
+            let _ = Tolerance::new(0.0, -1.0);
+        }
+    }
+
+    mod approx_eq {
+        use super::*;
+
+        #[test]
+        fn rejects_nonfinite_operands() {
+            let tolerance = Tolerance::DEFAULT;
+
+            for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+                assert!(!approx_eq(invalid, 1.0, tolerance));
+                assert!(!approx_eq(1.0, invalid, tolerance));
+                assert!(!approx_eq(invalid, invalid, tolerance));
+            }
+        }
+
+        #[test]
+        fn includes_the_absolute_tolerance_boundary() {
+            let tolerance = Tolerance::new(0.125, 0.0);
+            let boundary = 1.125_f64;
+
+            assert!(approx_eq(1.0, boundary, tolerance));
+            assert!(!approx_eq(1.0, boundary.next_up(), tolerance));
+        }
+
+        #[test]
+        fn includes_the_relative_tolerance_boundary() {
+            let tolerance = Tolerance::new(0.0, 0.5);
+            let boundary = 2.0_f64;
+
+            assert!(approx_eq(1.0, boundary, tolerance));
+            assert!(!approx_eq(1.0, boundary.next_up(), tolerance));
+        }
+    }
+
     mod assert_approx_eq {
         use super::*;
 

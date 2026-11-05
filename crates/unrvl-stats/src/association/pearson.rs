@@ -16,12 +16,9 @@ use crate::internal::deviations::CenteredSample;
 /// are provided, any observation is non-finite, or either sample is constant.
 /// No pairs are discarded.
 ///
-/// Uses separate power-of-two scales, corrected centering, and compensation
-/// for product and summation rounding. The scales cancel in the ratio, so the
-/// calculation can remain finite even when covariance overflows or underflows.
-/// Rounding beyond `[-1, 1]` is clamped to the nearest endpoint. These measures
-/// do not eliminate rounding or underflow; small contributions relative to the
-/// input scales can be lost.
+/// The calculation stays in scaled units, where covariance is less prone to
+/// overflow or underflow. Scaling can lose very small contributions. The
+/// result is clamped to `[-1, 1]` to account for rounding.
 ///
 /// Uses `O(n)` time and `O(1)` additional memory, where `n` is the number of
 /// paired observations.

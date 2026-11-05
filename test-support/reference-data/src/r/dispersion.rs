@@ -4,7 +4,7 @@
 //! and corresponding [`Statistics`]. Fixtures and reference values are
 //! embedded; loading them does not run R or require network access.
 
-use super::parsing::{parse_finite, parse_usize, parse_value_fixture};
+use super::parsing::{parse_finite, parse_usize, parse_value_fixture, unique_reference_row};
 
 /// A bundled R dispersion dataset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -212,12 +212,7 @@ impl Parser {
             "dispersion reference CSV header should match the expected schema"
         );
 
-        let row = reference
-            .find(|line| {
-                line.split_once(',')
-                    .is_some_and(|(row_case, _)| row_case == case)
-            })
-            .expect("dispersion reference data should contain the requested case");
+        let row = unique_reference_row(reference, case, "dispersion reference");
 
         let fields: Vec<_> = row.split(',').collect();
         assert_eq!(

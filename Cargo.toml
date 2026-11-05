@@ -20,7 +20,6 @@ authors = ["Ed"]
 license = "MIT OR Apache-2.0"
 description = "Rust foundations for data exploration."
 repository = "https://github.com/edwrks/unrvl"
-homepage = "https://github.com/edwrks/unrvl"
 keywords = ["statistics", "stats", "quantitative", "analysis", "math"]
 categories = ["mathematics", "science"]
 

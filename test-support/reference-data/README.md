@@ -11,6 +11,17 @@ Test reference datasets and loaders for the workspace's statistical tests.
 Reference data stays separate from production crates. See the
 [data guide](data/README.md) for fixture families and NIST integrity checks.
 
+## Run Reference Tests
+
+From the repository root:
+
+```sh
+cargo test --locked -p unrvl-stats --test nist --test r
+```
+
+These tests use the committed datasets and reference values. Regenerating the R
+tables uses Docker, as described below.
+
 ## Regenerate R References
 
 From the repository root:

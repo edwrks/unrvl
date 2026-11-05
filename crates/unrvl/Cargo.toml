@@ -1,12 +1,11 @@
 [package]
 name = "unrvl"
-description = "Numerical, statistical, time-series, and risk analysis tools for Rust"
+description = "Numerical, statistical, and time-series foundations for Rust"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-homepage.workspace = true
 keywords.workspace = true
 categories.workspace = true
 readme = "README.md"
@@ -25,7 +24,7 @@ full = ["numerics", "risk", "stats", "timeseries"]
 unrvl-numerics = { workspace = true, optional = true }
 unrvl-risk = { workspace = true, optional = true }
 unrvl-stats = { workspace = true, optional = true }
-unrvl-timeseries= { workspace = true, optional = true }
+unrvl-timeseries = { workspace = true, optional = true }
 
 [lints]
 workspace = true

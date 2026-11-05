@@ -241,13 +241,7 @@ impl SimpleLinearRegression {
     /// Returns `NaN` for at most two observations or undefined
     /// [`R²`](Self::r_squared), including a constant response.
     ///
-    /// Uses the stored R² and observation count. Evaluates the equivalent
-    /// `((n - 1) * R² - 1) / (n - 2)` with a fused multiply-add in the
-    /// numerator to reduce intermediate rounding near zero. Rounding in the
-    /// stored R² still carries through; a perfect fit can round slightly below
-    /// one.
-    ///
-    /// Uses `O(1)` time and additional memory.
+    /// Rounding in the stored R² carries through to the adjusted value.
     ///
     /// # Examples
     ///
@@ -268,6 +262,8 @@ impl SimpleLinearRegression {
         let n_minus_1 = usize_to_f64(n - 1);
         let n_minus_2 = usize_to_f64(n - 2);
 
+        // The equivalent formula ((n - 1) * R² - 1) / (n - 2) lets us fuse the
+        // numerator to reduce rounding near zero.
         n_minus_1.mul_add(self.r_squared, -1.0) / n_minus_2
     }
 

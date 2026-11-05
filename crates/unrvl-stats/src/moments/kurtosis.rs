@@ -205,49 +205,24 @@ mod tests {
     }
 
     #[test]
-    fn returns_nan_for_nan_input() {
-        let xs = &[1.0, 2.0, 3.0, f64::NAN];
-
+    fn rejects_nonfinite_observations_at_minimum_sample_sizes() {
         for (estimator, convention) in SELECTIONS {
-            let result = kurtosis(xs, estimator, convention);
+            let n = match estimator {
+                ShapeEstimator::Type1 | ShapeEstimator::Type3 => 2,
+                ShapeEstimator::Type2 => 4,
+            };
 
-            assert!(result.is_nan());
-        }
-    }
+            for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+                for index in 0..n {
+                    let mut xs = [1.0, 2.0, 3.0, 4.0];
+                    xs[index] = invalid;
 
-    #[test]
-    fn returns_nan_for_positive_infinity() {
-        let xs = &[1.0, 2.0, 3.0, f64::INFINITY];
+                    let result = kurtosis(&xs[..n], estimator, convention);
 
-        for (estimator, convention) in SELECTIONS {
-            let result = kurtosis(xs, estimator, convention);
-
-            assert!(result.is_nan());
-        }
-    }
-
-    #[test]
-    fn returns_nan_for_negative_infinity() {
-        let xs = &[1.0, 2.0, 3.0, f64::NEG_INFINITY];
-
-        for (estimator, convention) in SELECTIONS {
-            let result = kurtosis(xs, estimator, convention);
-
-            assert!(result.is_nan());
-        }
-    }
-
-    #[test]
-    fn returns_nan_for_nonfinite_short_samples() {
-        for (estimator, convention) in SELECTIONS {
-            for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-                for n in 2..=3 {
-                    for index in 0..n {
-                        let mut xs = [1.0, 2.0, 3.0];
-                        xs[index] = value;
-
-                        assert!(kurtosis(&xs[..n], estimator, convention).is_nan());
-                    }
+                    assert!(
+                        result.is_nan(),
+                        "{estimator:?}, {convention:?}, index={index}, invalid={invalid:?}",
+                    );
                 }
             }
         }

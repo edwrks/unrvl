@@ -13,7 +13,7 @@
 //! Test NaN, infinities, empty samples, and important extreme magnitudes
 //! explicitly where the API requires defined behavior for them.
 
-use proptest::prelude::{any, prop};
+use proptest::prelude::prop;
 use proptest::strategy::Strategy;
 
 /// Maximum number of observations generated for a sample.
@@ -170,7 +170,9 @@ pub fn exact_translation_case(min_len: usize) -> impl Strategy<Value = (Vec<f64>
 /// infinities. Use [`bounded_finite_value`] when moderate magnitudes are
 /// needed.
 pub fn finite_value() -> impl Strategy<Value = f64> {
-    any::<f64>()
+    use proptest::num::f64::{NEGATIVE, NORMAL, POSITIVE, SUBNORMAL, ZERO};
+
+    POSITIVE | NEGATIVE | NORMAL | SUBNORMAL | ZERO
 }
 
 /// Generates `NaN`, positive infinity, or negative infinity.

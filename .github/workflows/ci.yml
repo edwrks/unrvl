@@ -39,6 +39,14 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
+      - name: Check facade feature combinations
+        run: |
+          cargo check --locked -p unrvl --no-default-features
+          cargo check --locked -p unrvl --no-default-features --features numerics
+          cargo check --locked -p unrvl --no-default-features --features stats
+          cargo check --locked -p unrvl --no-default-features --features timeseries
+          cargo check --locked -p unrvl --no-default-features --features risk
+
       - name: Check Clippy
         run: cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
 

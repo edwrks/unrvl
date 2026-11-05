@@ -18,9 +18,7 @@ use crate::internal::second_moment::SecondMoment;
 ///
 /// Returns `NaN` for an empty slice, `n <= ddof`, or any non-finite
 /// observation. A finite constant sample with a positive divisor returns zero,
-/// including a singleton with population normalization. Even `Ddof(usize::MAX)`
-/// returns `NaN` for insufficient observations without overflowing the count
-/// arithmetic.
+/// including a singleton with population normalization.
 ///
 /// Uses scaling, corrected centering, and compensated summation to reduce
 /// numerical error. Takes the square root before restoring the scale, so the

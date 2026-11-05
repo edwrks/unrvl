@@ -1,6 +1,6 @@
 # unrvl
 
-An  opinionated collection of quantitative analysis tools for Rust, with a focus
+An opinionated collection of quantitative analysis tools for Rust, with a focus
 on financial data.
 
 ## Crates
@@ -10,9 +10,9 @@ on financial data.
 - **`unrvl`**: optional access to the component crates through a facade.
 - **`unrvl-numerics`**: numerical primitives and floating-point utilities.
 - **`unrvl-stats`**: descriptive statistics and statistical analysis.
-- **`unrvl-timeseries`**: time-series transformations, rolling analysis, and
-  temporal statistics.
-- **`unrvl-risk`**: risk measures and analytical tools for financial data.
+- **`unrvl-timeseries`**: exact timestamps, validated series, time-range
+  selection, and intervals. Session-aware analysis is in development.
+- **`unrvl-risk`**: in development; no public API yet.
 
 The facade has no default features. Components can be enabled individually:
 
@@ -55,18 +55,37 @@ let variance = xs.var(Normalization::Sample);
 The APIs operate deliberately on `f64` values and document their estimator
 conventions, input requirements, and undefined results.
 
-Implementations are checked against independent reference data and mathematical
-properties.
-
 ## Numerical Behavior
 
 The implementations use compensated summation and scaling where appropriate
 to reduce rounding error and avoid intermediate overflow and underflow. Results
 remain subject to the range and precision of `f64`.
 
-Individual functions document their input requirements and numerical limitations.
-Undefined statistical results generally return `NaN`; invalid input shapes may
-panic.
+Scalar statistics generally return `NaN` for invalid samples or undefined
+results. Paired slice statistics and dot products panic for unequal lengths.
+Matrix operations, empirical distribution construction, and regression fitting
+report invalid inputs through typed `Result`s. Individual functions document
+their input requirements and numerical limitations.
+
+## Validation
+
+The [reference-data guide](test-support/reference-data/README.md) describes
+comparisons against NIST certified values and committed R/e1071 outputs. The
+[R generator guide](test-support/reference-data/scripts/r/README.md) documents
+estimator conventions, pinned reference software versions, and regeneration
+commands. Unit and property tests cover mathematical invariants and
+floating-point boundaries, including cancellation and extreme magnitudes.
+
+Run the workspace tests and documentation examples from the repository root:
+
+```sh
+cargo test --locked --workspace --all-targets --all-features
+cargo test --locked --workspace --doc --all-features
+```
+
+The [numerics](crates/unrvl-numerics/benches/README.md) and
+[statistics](crates/unrvl-stats/benches/README.md) benchmark guides describe
+workloads and commands for measuring performance.
 
 ## Status
 
@@ -79,8 +98,8 @@ numerical and statistical foundations mature.
 
 Licensed under either of:
 
-- Apache License, Version 2.0
-- MIT License
+- [Apache License, Version 2.0](LICENSE-APACHE)
+- [MIT License](LICENSE-MIT)
 
 at your option.
 

@@ -12,7 +12,7 @@
 //! statistic. Fixtures and generated results are embedded in the crate; loading
 //! them does not run R or require network access.
 
-use super::parsing::{parse_finite, parse_usize, parse_value_fixture};
+use super::parsing::{parse_finite, parse_usize, parse_value_fixture, unique_reference_row};
 
 /// A bundled R moments dataset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -257,12 +257,7 @@ impl Parser {
             "moments reference CSV header should match the expected schema"
         );
 
-        let row = reference
-            .find(|line| {
-                line.split_once(',')
-                    .is_some_and(|(row_case, _)| row_case == case)
-            })
-            .expect("moments reference data should contain the requested case");
+        let row = unique_reference_row(reference, case, "moments reference");
 
         let fields: Vec<_> = row.split(',').collect();
 

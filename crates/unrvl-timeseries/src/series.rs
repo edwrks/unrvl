@@ -19,7 +19,7 @@ pub enum SeriesError {
 
     /// An observed value is NaN or infinite.
     #[error(
-        "value at index {index} must be finite, got {value} at {nanos} nanoseconds",
+        "value at index {index} must be finite, got {value} at {nanos} ns",
         nanos = .timestamp.as_unix_nanos(),
     )]
     NonFiniteValue {
@@ -35,8 +35,8 @@ pub enum SeriesError {
 
     /// An observation's timestamp is equal to or earlier than its predecessor.
     #[error(
-        "timestamp at index {index} ({current_nanos} nanoseconds) must be later than \
-         index {previous_index} ({previous_nanos} nanoseconds)",
+        "timestamp at index {index} ({current_nanos} ns) must be later than \
+         index {previous_index} ({previous_nanos} ns)",
         current_nanos = .current.as_unix_nanos(),
         previous_nanos = .previous.as_unix_nanos(),
     )]
@@ -56,8 +56,8 @@ pub enum SeriesError {
 
     /// A bounded time range starts after it ends.
     #[error(
-        "range start ({start_nanos} nanoseconds) must not be later than \
-         end ({end_nanos} nanoseconds)",
+        "range start ({start_nanos} ns) must not be later than \
+         end ({end_nanos} ns)",
         start_nanos = .start.as_unix_nanos(),
         end_nanos = .end.as_unix_nanos(),
     )]
@@ -124,9 +124,6 @@ impl Series {
 
     /// Returns a view of the stored observations without allocation or
     /// revalidation.
-    ///
-    /// Uses `O(1)` time and additional memory. The view borrows from this
-    /// series.
     #[must_use]
     pub const fn view(&self) -> SeriesView<'_> {
         SeriesView {

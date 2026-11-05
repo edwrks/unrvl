@@ -45,5 +45,7 @@ intermediate overflow can produce non-finite results.
 Input contracts vary by operation. Dot products panic for unequal slice lengths,
 extrema panic for empty slices, and checked conversion panics outside the
 consecutive exact integer range. Extrema ignore NaN when a non-NaN value is
-present.
+present and accept infinities. Statistical routines require finite observations
+and report invalid samples according to their documented contracts, including
+when they use these numerical primitives internally.
 
