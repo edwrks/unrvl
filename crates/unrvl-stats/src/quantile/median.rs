@@ -26,6 +26,7 @@ pub fn median(xs: &[f64]) -> f64 {
 mod tests {
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq};
+    use test_utils::assertions::assert_nan_for_nonfinite_inputs;
     use test_utils::strategies::{
         constant_sample, exact_translation_case, finite_sample, positive_power_of_two_scale,
     };
@@ -69,9 +70,7 @@ mod tests {
 
     #[test]
     fn nonfinite_observation_returns_nan() {
-        assert!(median(&[1.0, f64::NAN]).is_nan());
-        assert!(median(&[1.0, f64::INFINITY]).is_nan());
-        assert!(median(&[1.0, f64::NEG_INFINITY]).is_nan());
+        assert_nan_for_nonfinite_inputs(median, &[1.0, 2.0]);
     }
 
     proptest! {

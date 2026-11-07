@@ -93,6 +93,7 @@ pub(super) fn restore_units(scaled_covariance: f64, x_unit: f64, y_unit: f64) ->
 mod tests {
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq, assert_approx_eq};
+    use test_utils::assertions::assert_nan_for_nonfinite_inputs;
     use test_utils::strategies::{
         MAX_SAMPLE_LEN, finite_paired_samples, finite_sample, nonfinite_value,
         positive_power_of_two_scale,
@@ -147,21 +148,19 @@ mod tests {
 
     #[test]
     fn all_normalizations_reject_nonfinite_observations() {
-        for normalization in NORMALIZATIONS {
-            for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-                let bad_samples = [
-                    [invalid, 1.0, 2.0],
-                    [1.0, invalid, 2.0],
-                    [1.0, 2.0, invalid],
-                ];
-                let good_samples = [[2.0, 3.0, 4.0], [2.0; 3]];
+        let sample = [1.0, 2.0, 3.0];
+        let other_samples = [[2.0, 3.0, 4.0], [2.0; 3]];
 
-                for bad in bad_samples {
-                    for good in good_samples {
-                        assert!(covariance(&bad, &good, normalization).is_nan());
-                        assert!(covariance(&good, &bad, normalization).is_nan());
-                    }
-                }
+        for normalization in NORMALIZATIONS {
+            for other in other_samples {
+                assert_nan_for_nonfinite_inputs(
+                    |xs| covariance(xs, &other, normalization),
+                    &sample,
+                );
+                assert_nan_for_nonfinite_inputs(
+                    |ys| covariance(&other, ys, normalization),
+                    &sample,
+                );
             }
         }
     }

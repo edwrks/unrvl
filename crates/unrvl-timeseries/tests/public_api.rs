@@ -1,7 +1,9 @@
 use std::time::Duration;
 
+use unrvl_timeseries::cadence::{FixedGrid, GridCoverage, SessionCloseCoverage};
 use unrvl_timeseries::{
-    Series, SeriesView, Session, SessionSchedule, TimeInterval, Timestamp, TimestampError,
+    AvailabilityView, Series, SeriesView, Session, SessionSchedule, TimeInterval, Timestamp,
+    TimestampError, align,
 };
 
 #[test]
@@ -33,8 +35,7 @@ fn checked_timestamp_arithmetic_is_available_externally() {
 fn series_views_are_available_externally() {
     let timestamps = [0, 1, 3].map(Timestamp::from_unix_nanos);
     let values = [-2.0, 0.0, 5.0];
-    let result = SeriesView::new(&timestamps, &values);
-    let series = result.unwrap();
+    let series = SeriesView::new(&timestamps, &values).unwrap();
 
     let _ = series.timestamps();
     let _ = series.values();
@@ -47,8 +48,7 @@ fn series_views_are_available_externally() {
 fn owned_series_are_available_externally() {
     let timestamps = [0, 1, 3].map(Timestamp::from_unix_nanos).to_vec();
     let values = vec![-2.0, 0.0, 5.0];
-    let result = Series::new(timestamps, values);
-    let series = result.unwrap();
+    let series = Series::new(timestamps, values).unwrap();
 
     let _ = series.timestamps();
     let _ = series.values();
@@ -58,11 +58,22 @@ fn owned_series_are_available_externally() {
 }
 
 #[test]
+fn availability_views_are_available_externally() {
+    let timestamps = [Timestamp::UNIX_EPOCH];
+    let series = SeriesView::new(&timestamps, &[100.0]).unwrap();
+    let availability = AvailabilityView::new(series, &timestamps).unwrap();
+
+    let _ = availability.series();
+    let _ = availability.available_at();
+    let _ = availability.len();
+    let _ = availability.is_empty();
+}
+
+#[test]
 fn time_intervals_are_available_externally() {
     let start = Timestamp::UNIX_EPOCH;
     let end = Timestamp::from_unix_nanos(2);
-    let result = TimeInterval::new(start, end);
-    let interval = result.unwrap();
+    let interval = TimeInterval::new(start, end).unwrap();
 
     let _ = interval.start();
     let _ = interval.end();
@@ -80,11 +91,12 @@ fn sessions_are_available_externally() {
     let start = Timestamp::UNIX_EPOCH;
     let end = Timestamp::from_unix_nanos(2);
     let opening = TimeInterval::new(start, end).unwrap();
-    let result = Session::new("regular", vec![opening]);
-    let session = result.unwrap();
+    let session = Session::new("regular", vec![opening]).unwrap();
 
     let _ = session.id();
     let _ = session.intervals();
+    let _ = session.first_open();
+    let _ = session.final_close();
     let _ = session.is_open_at(start);
 }
 
@@ -94,8 +106,7 @@ fn session_schedules_are_available_externally() {
     let end = Timestamp::from_unix_nanos(2);
     let coverage = TimeInterval::new(start, end).unwrap();
     let session = Session::new("regular", vec![coverage]).unwrap();
-    let result = SessionSchedule::new(coverage, vec![session]);
-    let schedule = result.unwrap();
+    let schedule = SessionSchedule::new(coverage, vec![session]).unwrap();
 
     let _ = schedule.coverage();
     let _ = schedule.sessions();
@@ -105,4 +116,108 @@ fn session_schedules_are_available_externally() {
     let _ = schedule.next_session(start);
     let _ = schedule.status_at(start);
     let _ = schedule.open_duration(coverage);
+}
+
+#[test]
+fn exact_alignment_is_available_externally() {
+    let timestamps = [Timestamp::UNIX_EPOCH];
+    let left = SeriesView::new(&timestamps, &[1.0]).unwrap();
+    let right = SeriesView::new(&timestamps, &[2.0]).unwrap();
+
+    let aligned = align::inner(left, right);
+    let _ = aligned.iter().next();
+}
+
+#[test]
+fn backward_as_of_alignment_is_available_externally() {
+    let timestamps = [Timestamp::UNIX_EPOCH];
+    let left = SeriesView::new(&timestamps, &[1.0]).unwrap();
+    let right = SeriesView::new(&timestamps, &[2.0]).unwrap();
+
+    let aligned = align::as_of_backward(left, right, Duration::ZERO);
+    let row = aligned.iter().next().unwrap();
+    let _ = row.outcome;
+}
+
+#[test]
+fn availability_aware_alignment_is_available_externally() {
+    let timestamps = [Timestamp::UNIX_EPOCH];
+    let left = SeriesView::new(&timestamps, &[1.0]).unwrap();
+    let right = SeriesView::new(&timestamps, &[2.0]).unwrap();
+    let right = AvailabilityView::new(right, &timestamps).unwrap();
+
+    let aligned = align::as_of_available(left, right, Duration::ZERO);
+    let row = aligned.iter().next().unwrap();
+    let _ = row.outcome;
+}
+
+#[test]
+fn fixed_sampling_grids_are_available_externally() {
+    let grid = FixedGrid::new(
+        Timestamp::UNIX_EPOCH,
+        Duration::from_secs(3600),
+        Duration::from_secs(60),
+    )
+    .unwrap();
+
+    let _ = grid.origin();
+    let _ = grid.spacing();
+    let _ = grid.tolerance();
+}
+
+#[test]
+fn grid_coverage_is_available_externally() {
+    let timestamps = [Timestamp::UNIX_EPOCH];
+    let series = SeriesView::new(&timestamps, &[100.0]).unwrap();
+    let grid = FixedGrid::new(timestamps[0], Duration::from_secs(60), Duration::ZERO).unwrap();
+    let coverage = GridCoverage::new(series, grid, timestamps[0]..=timestamps[0]).unwrap();
+
+    let _ = coverage.series();
+    let _ = coverage.grid();
+    let _ = coverage.bounds();
+    let _ = coverage.observed_count();
+    let _ = coverage.expected_count();
+    let _ = coverage.missing_count();
+    let _ = coverage.is_complete();
+    let _ = coverage.gaps();
+    let _ = coverage.iter().next();
+}
+
+#[test]
+fn slot_alignment_is_available_externally() {
+    let timestamps = [Timestamp::UNIX_EPOCH];
+    let left = SeriesView::new(&timestamps, &[100.0]).unwrap();
+    let right = SeriesView::new(&timestamps, &[101.0]).unwrap();
+    let grid = FixedGrid::new(timestamps[0], Duration::from_secs(60), Duration::ZERO).unwrap();
+
+    let aligned = {
+        let left = GridCoverage::new(left, grid, ..).unwrap();
+        let right = GridCoverage::new(right, grid, ..).unwrap();
+        align::inner_slots(&left, &right).unwrap()
+    };
+
+    let _ = aligned.iter().next();
+}
+
+#[test]
+fn session_close_coverage_is_available_externally() {
+    let open = Timestamp::UNIX_EPOCH;
+    let close = Timestamp::from_unix_nanos(1);
+    let interval = TimeInterval::new(open, close).unwrap();
+    let session = Session::new("regular", vec![interval]).unwrap();
+    let schedule = SessionSchedule::new(interval, vec![session]).unwrap();
+    let timestamps = [close];
+    let series = SeriesView::new(&timestamps, &[100.0]).unwrap();
+    let coverage = SessionCloseCoverage::new(series, &schedule, ..).unwrap();
+
+    let _ = coverage.series();
+    let _ = coverage.schedule();
+    let _ = coverage.bounds();
+    let _ = coverage.observed_count();
+    let _ = coverage.expected_count();
+    let _ = coverage.missing_count();
+    let _ = coverage.is_complete();
+    let _ = coverage.gaps();
+    let _ = coverage.missing().next();
+    let _ = coverage.iter().next();
 }

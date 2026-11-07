@@ -1,14 +1,13 @@
 #![doc = include_str!("../README.md")]
 #![warn(missing_docs)]
 
-mod interval;
-mod schedule;
+pub mod align;
+pub mod cadence;
+
 mod series;
 mod session;
-mod timestamp;
+mod time;
 
-pub use interval::{IntervalError, TimeInterval};
-pub use schedule::{ScheduleError, ScheduleStatus, SessionSchedule};
-pub use series::{Series, SeriesError, SeriesView};
-pub use session::{Session, SessionError};
-pub use timestamp::{Timestamp, TimestampError};
+pub use series::{AvailabilityError, AvailabilityView, Series, SeriesError, SeriesView};
+pub use session::{ScheduleError, ScheduleStatus, Session, SessionError, SessionSchedule};
+pub use time::{IntervalError, TimeInterval, Timestamp, TimestampError};

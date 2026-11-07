@@ -11,7 +11,7 @@ on financial data.
 - **`unrvl-numerics`**: numerical primitives and floating-point utilities.
 - **`unrvl-stats`**: descriptive statistics and statistical analysis.
 - **`unrvl-timeseries`**: exact timestamps, validated series, time-range
-  selection, and intervals. Session-aware analysis is in development.
+  selection, supplied session schedules, alignment, and sampling coverage.
 - **`unrvl-risk`**: in development; no public API yet.
 
 The facade has no default features. Components can be enabled individually:

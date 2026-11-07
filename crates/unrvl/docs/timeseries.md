@@ -167,3 +167,152 @@ per session. A session that closes at the end of coverage still has a close
 label at that timestamp.
 
 Construction cannot detect omitted sessions.
+
+# Checking Grid Sampling
+
+[`cadence::FixedGrid`] describes timestamps separated by a fixed elapsed
+duration, anchored at a supplied origin.
+
+```rust
+# use std::time::Duration;
+# use unrvl::timeseries::{SeriesView, Timestamp};
+# use unrvl::timeseries::cadence::{FixedGrid, GridCoverage};
+let origin = Timestamp::from_unix_secs(9 * 3600)?;
+let grid = FixedGrid::new(
+    origin,
+    Duration::from_secs(3600),
+    Duration::from_secs(2 * 60),
+)?;
+
+let timestamps = [
+    Timestamp::from_unix_secs(9 * 3600 + 60)?,
+    Timestamp::from_unix_secs(11 * 3600 - 60)?,
+];
+let prices = SeriesView::new(&timestamps, &[100.0, 102.0])?;
+let end = Timestamp::from_unix_secs(11 * 3600)?;
+let coverage = GridCoverage::new(prices, grid, origin..=end)?;
+
+assert_eq!(coverage.expected_count(), 3);
+assert_eq!(coverage.missing_count(), 1);
+assert_eq!(coverage.gaps()[0].first, Timestamp::from_unix_secs(10 * 3600)?);
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+This describes hourly timestamps such as 08:00, 09:00, and 10:00, allowing up
+to two minutes of deviation. The origin anchors the grid in both directions;
+analysis bounds are separate.
+
+Spacing must be positive. Tolerance is inclusive and strictly less than half
+the spacing, so an accepted timestamp can belong to only one slot. Zero
+tolerance requires exact timestamps. [`cadence::GridError`] reports invalid
+configuration.
+
+[`cadence::GridCoverage`] maps every supplied observation to a distinct grid
+slot within explicit bounds. Bounds select expected grid labels: the example
+accepts observations at 09:01 and 10:59 for the 09:00 and 11:00 slots. The
+10:00 slot is missing. Original timestamps and values are preserved alongside
+their slot labels and deviations.
+
+Missing slots are reported in a successful result as compact consecutive
+ranges with inclusive first and last labels. Counts describe expected,
+observed, and missing slots; `is_complete()` checks that none are missing.
+Expected and missing counts use `u128` to cover the full timestamp range.
+[`cadence::CadenceError`] reports off-grid observations, labels outside the
+bounds, collisions, or unrepresentable slot timestamps. No observations are
+silently dropped or filled.
+
+# Checking Session Closes
+
+[`cadence::SessionCloseCoverage`] checks for one observation at each selected
+session's exact final close. For example, a schedule containing Friday and
+Monday sessions expects two closing observations across that period; the
+weekend does not create missing samples.
+
+Pass a series, its supplied schedule, and close-label bounds to
+[`cadence::SessionCloseCoverage::new`]. Bounds may include or exclude either
+endpoint. `..` selects the whole schedule, including a final close at its
+coverage end. Explicit endpoints outside coverage return an error because the
+schedule cannot establish expected sessions there.
+
+The result preserves source observations and their sessions. Expected,
+observed, and missing counts describe the selected closes. `missing()` yields
+missing sessions with their identifiers and final close timestamps; `gaps()`
+reports consecutive missing runs as ranges into the supplied schedule.
+Missing closes are valid coverage outcomes. Use `is_complete()` when every
+selected session must have an observation.
+
+Every supplied observation must exactly match a selected final close. An
+intermediate close before a session break does not qualify. Observations are
+not dropped or filled, and nearby observations are not substituted for closes.
+[`cadence::SessionCloseError`] identifies invalid bounds or the first unexpected
+observation. Open-period membership is separate: a closing observation labels
+the session that ended, including at a shared close/open boundary.
+
+# Aligning Series
+
+[`align::inner`] pairs observations from two [`SeriesView`]s at exactly equal
+timestamps. Both series may have irregular spacing. Iterate over the result
+to get each matched timestamp, both values, and their indices in the supplied
+views. [`align::InnerAlignment`] also reports the number of observations left
+unmatched on each side. Series with no shared timestamps give an empty result.
+
+[`align::inner_slots`] pairs observations with equal checked grid labels from
+two [`cadence::GridCoverage`] inputs. For example, observations one second
+before and after 10:00 can match the same 10:00 slot when each is within its
+grid's tolerance. Each pair preserves the shared label and both original
+timestamps, values, source indices, and deviations.
+
+Grids must have the same spacing and origins separated by whole grid steps.
+Tolerances and analysis bounds may differ. Unmatched counts include all
+supplied observations, including labels outside the other input's bounds.
+[`align::SlotAlignmentError`] identifies incompatible grids. Empty
+intersections are valid. Slot matching describes sampling positions;
+information availability is assessed separately.
+
+[`align::as_of_backward`] keeps every left observation and looks for the latest
+right observation at or before its timestamp. The match must be within the
+supplied maximum age, inclusive. For example, a trade at 10:03 can match a quote
+at 10:01 with a two-minute limit. [`align::AsOfOutcome`] distinguishes matches,
+missing prior observations, and candidates that are too old. Matched rows
+include the right observation's index, timestamp, value, and elapsed age.
+
+# Recording Availability
+
+[`AvailabilityView`] pairs a series with caller-supplied timestamps recording
+when each observation became available. For example, a price observed at 10:00
+may become available at 10:07. A historical decision at 10:03 could not yet use
+that price.
+
+```rust
+# use unrvl::timeseries::{AvailabilityView, SeriesView, Timestamp};
+let observed_at = [Timestamp::from_unix_secs(10 * 60 * 60)?];
+let available_at = [Timestamp::from_unix_secs(10 * 60 * 60 + 7 * 60)?];
+let prices = SeriesView::new(&observed_at, &[100.0])?;
+let availability = AvailabilityView::new(prices, &available_at)?;
+
+assert_eq!(availability.available_at(), &available_at);
+# Ok::<(), Box<dyn std::error::Error>>(())
+```
+
+Construction requires one availability timestamp per observation, at or after
+its observation time. Availability times may repeat or be out of order. The
+view borrows the series and availability slice without allocation;
+[`AvailabilityError`] identifies invalid input. Use a consistent meaning for
+availability, such as provider publication or receipt by your application.
+
+[`align::as_of_available`] matches each left observation to the latest right
+observation already available at its timestamp, within a supplied maximum age.
+In the example above, the price is excluded at 10:03 and eligible at 10:08
+with a ten-minute limit. Age is measured from observation time, so its age at
+10:08 is eight minutes.
+
+Every left row is preserved. [`align::AvailableAsOfOutcome`] distinguishes
+matches, missing preceding observations, observations not yet available, and
+available observations that are too old. Matched rows include the source
+index, value, observation timestamp, availability timestamp, age, and
+availability delay. A late older observation cannot replace a newer eligible
+observation.
+
+[`align::as_of_backward`] uses observation timestamps only. Use
+`as_of_available` when eligibility also depends on the supplied availability
+times.

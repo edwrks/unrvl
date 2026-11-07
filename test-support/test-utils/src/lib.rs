@@ -8,4 +8,5 @@
 //! - property-testing strategies for numerical inputs.
 
 pub mod approx;
+pub mod assertions;
 pub mod strategies;

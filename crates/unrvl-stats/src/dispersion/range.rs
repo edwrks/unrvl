@@ -25,6 +25,7 @@ pub fn range(xs: &[f64]) -> f64 {
 mod tests {
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq};
+    use test_utils::assertions::assert_nan_for_nonfinite_inputs;
     use test_utils::strategies::{
         bounded_finite_value, constant_sample, exact_translation_case, finite_sample,
         nonfinite_value, positive_power_of_two_scale,
@@ -41,27 +42,8 @@ mod tests {
     }
 
     #[test]
-    fn returns_nan_for_nan_input() {
-        let xs = [1.0, f64::NAN, 3.0];
-        let result = range(&xs);
-
-        assert!(result.is_nan());
-    }
-
-    #[test]
-    fn returns_nan_for_positive_infinity() {
-        let xs = [1.0, f64::INFINITY, 3.0];
-        let result = range(&xs);
-
-        assert!(result.is_nan());
-    }
-
-    #[test]
-    fn returns_nan_for_negative_infinity() {
-        let xs = [1.0, f64::NEG_INFINITY, 3.0];
-        let result = range(&xs);
-
-        assert!(result.is_nan());
+    fn returns_nan_for_nonfinite_observations() {
+        assert_nan_for_nonfinite_inputs(range, &[1.0, 2.0, 3.0]);
     }
 
     #[test]

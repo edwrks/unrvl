@@ -16,6 +16,8 @@ duplicating implementation details.
 ## Modules
 
 - `approx`: floating-point tolerances and approximate equality helpers.
+- `assertions`: checks for shared statistical input contracts using valid
+  control samples.
 - `strategies`: reusable property-testing strategies for numerical values and
   samples.
 

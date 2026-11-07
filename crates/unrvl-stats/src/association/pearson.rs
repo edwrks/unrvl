@@ -78,6 +78,7 @@ pub fn pearson(xs: &[f64], ys: &[f64]) -> f64 {
 mod tests {
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq, assert_approx_eq};
+    use test_utils::assertions::assert_nan_for_nonfinite_inputs;
     use test_utils::strategies::{
         exact_translation_case, finite_nonconstant_sample, finite_paired_samples,
         positive_power_of_two_scale,
@@ -108,13 +109,11 @@ mod tests {
 
     #[test]
     fn rejects_nonfinite_values_in_either_sample() {
-        for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-            for bad in [[invalid, 1.0], [1.0, invalid]] {
-                let good = [2.0, 3.0];
-                assert!(pearson(&bad, &good).is_nan());
-                assert!(pearson(&good, &bad).is_nan());
-            }
-        }
+        let sample = [1.0, 2.0];
+        let other = [2.0, 3.0];
+
+        assert_nan_for_nonfinite_inputs(|xs| pearson(xs, &other), &sample);
+        assert_nan_for_nonfinite_inputs(|ys| pearson(&other, ys), &sample);
     }
 
     #[test]
