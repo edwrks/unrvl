@@ -31,13 +31,13 @@ fmt-check:
 [group("check")]
 check:
     @echo "Checking Rust project"
-    cargo check --workspace --all-targets --all-features
+    cargo check --locked --workspace --all-targets --all-features
 
 # Runs Clippy with warnings treated as errors.
 [group("check")]
 clippy:
     @echo "Running Clippy"
-    cargo clippy --workspace --all-targets --all-features -- -D warnings
+    cargo clippy --locked --workspace --all-targets --all-features -- -D warnings
 
 # ==============================================================================
 # Tests
@@ -47,13 +47,13 @@ clippy:
 [group("test")]
 test:
     @echo "Running tests"
-    cargo test --workspace --all-targets --all-features
+    cargo test --locked --workspace --all-targets --all-features
 
 # Runs doc tests.
 [group("test")]
 test-doc:
     @echo "Running doc tests"
-    cargo test --workspace --doc --all-features
+    cargo test --locked --workspace --doc --all-features
 
 # ==============================================================================
 # Coverage
@@ -63,12 +63,12 @@ test-doc:
 [group("coverage")]
 coverage:
     @echo "Running coverage"
-    cargo llvm-cov --workspace
+    cargo llvm-cov --locked --workspace --all-features
 
 [group("coverage")]
 coverage-html:
     @echo "Generating coverage report"
-    cargo llvm-cov --workspace --html --open
+    cargo llvm-cov --locked --workspace --all-features --html --open
 
 # ==============================================================================
 # Documentation
@@ -78,12 +78,12 @@ coverage-html:
 [group("docs")]
 doc:
     @echo "Building docs"
-    RUSTDOCFLAGS="-D warnings" cargo doc --workspace --all-features --no-deps
+    RUSTDOCFLAGS="-D warnings" cargo doc --locked --workspace --all-features --no-deps
 
 # Opens docs locally.
 [group("docs")]
 doc-open:
-    cargo doc --workspace --all-features --no-deps --open
+    cargo doc --locked --workspace --all-features --no-deps --open
 
 # ==============================================================================
 # Quality

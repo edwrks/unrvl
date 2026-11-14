@@ -26,9 +26,10 @@ assert_eq!(values.std_dev(Normalization::Sample), 2.0);
 
 # Paired Samples and Fitted Objects
 
-Paired functions match observations by position. Matrix inputs contain one slice
-per variable, each with the same observation count. Output row and column
-indices follow the input variable order:
+Paired functions match observations by position. Callers must establish matching
+observation order, including timestamp alignment when relevant. Matrix inputs
+contain one slice per variable, each with the same observation count. Output
+row and column indices follow the input variable order:
 
 ```rust
 # use unrvl::stats::Normalization;
@@ -53,11 +54,18 @@ update them.
 
 # Undefined Results and Errors
 
-Scalar statistics generally return `NaN` for undefined results, such as an
-insufficient sample or an invalid divisor. Matrix operations, empirical
-distribution construction, and regression fitting return typed `Result`s for
-invalid inputs. Valid input can still yield an undefined statistic: a constant
-response gives a valid horizontal fit with `NaN` R² and adjusted R².
+Scalar statistics generally return `NaN` for invalid samples or undefined
+results, such as non-finite observations, an insufficient sample, or an invalid
+divisor. Paired scalar functions in [`association`] require equal-length slices
+and panic if their lengths differ. Individual functions document any additional
+preconditions, including exact observation-count limits, in their `Panics`
+sections.
+
+Matrix operations, empirical distribution construction, and regression fitting
+return typed `Result`s for invalid inputs. Success does not guarantee that every
+derived statistic is finite. A constant response gives a valid horizontal fit
+with `NaN` R² and adjusted R²; correlations involving a constant series are
+`NaN`, and covariance matrix entries can overflow to infinity.
 
 Scaling and compensated arithmetic reduce numerical error where appropriate.
 Results remain subject to `f64` rounding, underflow, and overflow.

@@ -501,7 +501,14 @@ mod tests {
                         let actual = matrix[i][j].to_bits();
                         let expected = covariance(xs, ys, normalization).to_bits();
 
-                        prop_assert_eq!(actual, expected);
+                        prop_assert_eq!(
+                            actual,
+                            expected,
+                            "normalization={:?}, entry=({}, {})",
+                            normalization,
+                            i,
+                            j,
+                        );
                     }
                 }
             }

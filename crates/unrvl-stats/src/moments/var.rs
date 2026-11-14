@@ -20,9 +20,7 @@ use crate::internal::second_moment::SecondMoment;
 ///
 /// Returns `NaN` for an empty slice, `n <= ddof`, or any non-finite
 /// observation. A finite constant sample with a positive divisor returns zero,
-/// including a singleton with population normalization. Even `Ddof(usize::MAX)`
-/// returns `NaN` for insufficient observations without overflowing the count
-/// arithmetic.
+/// including a singleton with population normalization.
 ///
 /// Uses scaling, corrected centering, and compensated summation to reduce
 /// numerical error. These do not eliminate rounding or underflow. The result
@@ -66,6 +64,7 @@ pub fn var(xs: &[f64], normalization: Normalization) -> f64 {
 mod tests {
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq, assert_approx_eq};
+    use test_utils::assertions::assert_nan_for_nonfinite_inputs;
     use test_utils::strategies::{
         MAX_SAMPLE_LEN, constant_sample, exact_translation_case, finite_sample,
         positive_power_of_two_scale,
@@ -96,37 +95,11 @@ mod tests {
     }
 
     #[test]
-    fn returns_nan_for_nan_input() {
-        let xs = &[1.0, 2.0, f64::NAN];
-        let result = var(xs, Normalization::Sample);
-
-        assert!(result.is_nan());
-    }
-
-    #[test]
-    fn returns_nan_for_positive_infinity() {
-        let xs = &[1.0, 2.0, f64::INFINITY];
-        let result = var(xs, Normalization::Sample);
-
-        assert!(result.is_nan());
-    }
-
-    #[test]
-    fn returns_nan_for_negative_infinity() {
-        let xs = &[1.0, 2.0, f64::NEG_INFINITY];
-        let result = var(xs, Normalization::Sample);
-
-        assert!(result.is_nan());
-    }
-
-    #[test]
     fn all_normalizations_reject_nonfinite_observations() {
+        let sample = [1.0, 2.0, 3.0];
+
         for normalization in NORMALIZATIONS {
-            for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-                for xs in [[value, 1.0, 2.0], [1.0, value, 2.0], [1.0, 2.0, value]] {
-                    assert!(var(&xs, normalization).is_nan());
-                }
-            }
+            assert_nan_for_nonfinite_inputs(|xs| var(xs, normalization), &sample);
         }
     }
 

@@ -43,7 +43,7 @@ fn num_acc_4() {
 }
 
 #[test]
-fn pi_digitis() {
+fn pi_digits() {
     run(Dataset::PiDigits);
 }
 

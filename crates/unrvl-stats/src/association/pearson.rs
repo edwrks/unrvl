@@ -16,12 +16,9 @@ use crate::internal::deviations::CenteredSample;
 /// are provided, any observation is non-finite, or either sample is constant.
 /// No pairs are discarded.
 ///
-/// Uses separate power-of-two scales, corrected centering, and compensation
-/// for product and summation rounding. The scales cancel in the ratio, so the
-/// calculation can remain finite even when covariance overflows or underflows.
-/// Rounding beyond `[-1, 1]` is clamped to the nearest endpoint. These measures
-/// do not eliminate rounding or underflow; small contributions relative to the
-/// input scales can be lost.
+/// The calculation stays in scaled units, where covariance is less prone to
+/// overflow or underflow. Scaling can lose very small contributions. The
+/// result is clamped to `[-1, 1]` to account for rounding.
 ///
 /// Uses `O(n)` time and `O(1)` additional memory, where `n` is the number of
 /// paired observations.
@@ -81,6 +78,7 @@ pub fn pearson(xs: &[f64], ys: &[f64]) -> f64 {
 mod tests {
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq, assert_approx_eq};
+    use test_utils::assertions::assert_nan_for_nonfinite_inputs;
     use test_utils::strategies::{
         exact_translation_case, finite_nonconstant_sample, finite_paired_samples,
         positive_power_of_two_scale,
@@ -111,13 +109,11 @@ mod tests {
 
     #[test]
     fn rejects_nonfinite_values_in_either_sample() {
-        for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-            for bad in [[invalid, 1.0], [1.0, invalid]] {
-                let good = [2.0, 3.0];
-                assert!(pearson(&bad, &good).is_nan());
-                assert!(pearson(&good, &bad).is_nan());
-            }
-        }
+        let sample = [1.0, 2.0];
+        let other = [2.0, 3.0];
+
+        assert_nan_for_nonfinite_inputs(|xs| pearson(xs, &other), &sample);
+        assert_nan_for_nonfinite_inputs(|ys| pearson(&other, ys), &sample);
     }
 
     #[test]

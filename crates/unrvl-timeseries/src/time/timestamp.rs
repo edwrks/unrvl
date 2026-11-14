@@ -6,21 +6,21 @@ use thiserror::Error;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Error)]
 pub enum TimestampError {
     /// Converting Unix seconds to nanoseconds would overflow `i64`.
-    #[error("Unix timestamp {value} seconds is outside the signed nanosecond range")]
+    #[error("Unix timestamp {value} seconds is outside the signed ns range")]
     SecondsOutOfRange {
         /// Number of seconds supplied to the constructor.
         value: i64,
     },
 
     /// Converting Unix milliseconds to nanoseconds would overflow `i64`.
-    #[error("Unix timestamp {value} milliseconds is outside the signed nanosecond range")]
+    #[error("Unix timestamp {value} milliseconds is outside the signed ns range")]
     MillisecondsOutOfRange {
         /// Number of milliseconds supplied to the constructor.
         value: i64,
     },
 
     /// Converting Unix microseconds to nanoseconds would overflow `i64`.
-    #[error("Unix timestamp {value} microseconds is outside the signed nanosecond range")]
+    #[error("Unix timestamp {value} microseconds is outside the signed ns range")]
     MicrosecondsOutOfRange {
         /// Number of microseconds supplied to the constructor.
         value: i64,
@@ -33,9 +33,9 @@ pub enum TimestampError {
 /// All `i64` values are representable, covering approximately 1677-2262.
 /// Timestamps compare by instant and preserve integer nanoseconds exactly.
 ///
-/// Uses the Unix timescale without representing leap seconds. The type does
-/// not resolve timezones: converting milliseconds into nanoseconds does not
-/// make the observations more precise.
+/// Uses the Unix timescale, which excludes leap seconds. Resolve local times
+/// to Unix time before construction. Converting milliseconds to nanoseconds
+/// preserves the precision of the source value.
 ///
 /// # Examples
 ///
@@ -341,6 +341,7 @@ mod tests {
             // Subtracting 2^63 ns from the epoch reaches MIN; starting at -1
             // overflows.
             let min_to_epoch = Duration::from_nanos(1_u64 << 63);
+
             // One nanosecond beyond the full i64 timestamp span.
             let beyond_full_span = Duration::from_nanos(u64::MAX) + Duration::from_nanos(1);
 

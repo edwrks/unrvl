@@ -32,7 +32,7 @@ use crate::internal::second_moment::SecondMoment;
 ///
 /// Panics if the divisor is positive and a finite sample contains more than
 /// `2^53` observations. The divisor requirement is checked before validating
-/// the observations, including for `Ddof(usize::MAX)`.
+/// the observations.
 ///
 /// # Examples
 ///

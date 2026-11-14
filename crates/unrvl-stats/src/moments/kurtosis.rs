@@ -131,6 +131,7 @@ pub fn kurtosis(xs: &[f64], estimator: ShapeEstimator, convention: Kurtosis) -> 
 mod tests {
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq, assert_approx_eq};
+    use test_utils::assertions::assert_nan_for_nonfinite_inputs;
     use test_utils::strategies::{
         exact_translation_case, finite_nonconstant_sample, nonfinite_value,
         positive_power_of_two_scale,
@@ -205,51 +206,16 @@ mod tests {
     }
 
     #[test]
-    fn returns_nan_for_nan_input() {
-        let xs = &[1.0, 2.0, 3.0, f64::NAN];
+    fn rejects_nonfinite_observations_at_minimum_sample_sizes() {
+        let sample = [1.0, 2.0, 3.0, 4.0];
 
         for (estimator, convention) in SELECTIONS {
-            let result = kurtosis(xs, estimator, convention);
+            let n = match estimator {
+                ShapeEstimator::Type1 | ShapeEstimator::Type3 => 2,
+                ShapeEstimator::Type2 => 4,
+            };
 
-            assert!(result.is_nan());
-        }
-    }
-
-    #[test]
-    fn returns_nan_for_positive_infinity() {
-        let xs = &[1.0, 2.0, 3.0, f64::INFINITY];
-
-        for (estimator, convention) in SELECTIONS {
-            let result = kurtosis(xs, estimator, convention);
-
-            assert!(result.is_nan());
-        }
-    }
-
-    #[test]
-    fn returns_nan_for_negative_infinity() {
-        let xs = &[1.0, 2.0, 3.0, f64::NEG_INFINITY];
-
-        for (estimator, convention) in SELECTIONS {
-            let result = kurtosis(xs, estimator, convention);
-
-            assert!(result.is_nan());
-        }
-    }
-
-    #[test]
-    fn returns_nan_for_nonfinite_short_samples() {
-        for (estimator, convention) in SELECTIONS {
-            for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-                for n in 2..=3 {
-                    for index in 0..n {
-                        let mut xs = [1.0, 2.0, 3.0];
-                        xs[index] = value;
-
-                        assert!(kurtosis(&xs[..n], estimator, convention).is_nan());
-                    }
-                }
-            }
+            assert_nan_for_nonfinite_inputs(|xs| kurtosis(xs, estimator, convention), &sample[..n]);
         }
     }
 

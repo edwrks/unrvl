@@ -1,12 +1,11 @@
 [package]
 name = "unrvl-risk"
-description = "Risk measures and analytical tools for financial data"
+description = "Financial risk analysis (in development; no public API yet)"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-homepage.workspace = true
 keywords.workspace = true
 categories.workspace = true
 readme = "README.md"

@@ -34,6 +34,7 @@ pub fn quantile(xs: &[f64], p: f64) -> f64 {
 mod tests {
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq, assert_approx_eq};
+    use test_utils::assertions::assert_nan_for_nonfinite_inputs;
     use test_utils::strategies::{
         constant_sample, finite_sample, positive_power_of_two_scale, probability,
     };
@@ -81,9 +82,7 @@ mod tests {
 
     #[test]
     fn nonfinite_observation_returns_nan() {
-        assert!(quantile(&[1.0, f64::NAN], 0.5).is_nan());
-        assert!(quantile(&[1.0, f64::INFINITY], 0.5).is_nan());
-        assert!(quantile(&[1.0, f64::NEG_INFINITY], 0.5).is_nan());
+        assert_nan_for_nonfinite_inputs(|xs| quantile(xs, 0.5), &[1.0, 2.0]);
     }
 
     #[test]

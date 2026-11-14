@@ -106,6 +106,7 @@ mod tests {
 
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq, assert_approx_eq};
+    use test_utils::assertions::assert_nan_for_nonfinite_inputs;
     use test_utils::strategies::{
         exact_translation_case, finite_nonconstant_sample, nonfinite_value,
         positive_power_of_two_scale,
@@ -159,35 +160,11 @@ mod tests {
     }
 
     #[test]
-    fn returns_nan_for_nan_input() {
-        let xs = &[1.0, 2.0, f64::NAN];
+    fn returns_nan_for_nonfinite_observations() {
+        let sample = [1.0, 2.0, 3.0];
 
         for estimator in ESTIMATORS {
-            let result = skewness(xs, estimator);
-
-            assert!(result.is_nan());
-        }
-    }
-
-    #[test]
-    fn returns_nan_for_positive_infinity() {
-        let xs = &[1.0, 2.0, f64::INFINITY];
-
-        for estimator in ESTIMATORS {
-            let result = skewness(xs, estimator);
-
-            assert!(result.is_nan());
-        }
-    }
-
-    #[test]
-    fn returns_nan_for_negative_infinity() {
-        let xs = &[1.0, 2.0, f64::NEG_INFINITY];
-
-        for estimator in ESTIMATORS {
-            let result = skewness(xs, estimator);
-
-            assert!(result.is_nan());
+            assert_nan_for_nonfinite_inputs(|xs| skewness(xs, estimator), &sample);
         }
     }
 

@@ -75,6 +75,7 @@ pub fn cv(xs: &[f64], normalization: Normalization) -> f64 {
 mod tests {
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq, assert_approx_eq};
+    use test_utils::assertions::assert_nan_for_nonfinite_inputs;
     use test_utils::strategies::{
         MAX_SAMPLE_LEN, finite_sample, nonfinite_value, positive_power_of_two_scale,
     };
@@ -108,14 +109,10 @@ mod tests {
 
     #[test]
     fn returns_nan_for_nonfinite_observations() {
-        for normalization in NORMALIZATIONS {
-            for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-                for xs in [[value, 1.0, 2.0], [1.0, value, 2.0], [1.0, 2.0, value]] {
-                    let result = cv(&xs, normalization);
+        let sample = [1.0, 2.0, 3.0];
 
-                    assert!(result.is_nan());
-                }
-            }
+        for normalization in NORMALIZATIONS {
+            assert_nan_for_nonfinite_inputs(|xs| cv(xs, normalization), &sample);
         }
     }
 

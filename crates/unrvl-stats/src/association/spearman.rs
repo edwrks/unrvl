@@ -55,6 +55,7 @@ pub fn spearman(xs: &[f64], ys: &[f64]) -> f64 {
 mod tests {
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq, assert_approx_eq};
+    use test_utils::assertions::assert_nan_for_nonfinite_inputs;
     use test_utils::strategies::{finite_nonconstant_sample, finite_paired_samples};
 
     use super::*;
@@ -79,15 +80,13 @@ mod tests {
 
     #[test]
     fn rejects_nonfinite_values_before_ranking() {
-        // Sorting NaN or infinity could otherwise turn invalid values into
-        // ordinary finite ranks and incorrectly produce a valid correlation.
-        for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
-            for bad in [[invalid, 1.0], [1.0, invalid]] {
-                let good = [2.0, 3.0];
-                assert!(spearman(&bad, &good).is_nan());
-                assert!(spearman(&good, &bad).is_nan());
-            }
-        }
+        // Reject non-finite values before sorting can turn them into finite
+        // ranks.
+        let sample = [1.0, 2.0];
+        let other = [2.0, 3.0];
+
+        assert_nan_for_nonfinite_inputs(|xs| spearman(xs, &other), &sample);
+        assert_nan_for_nonfinite_inputs(|ys| spearman(&other, ys), &sample);
     }
 
     #[test]

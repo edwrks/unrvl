@@ -18,9 +18,7 @@ use crate::internal::second_moment::SecondMoment;
 ///
 /// Returns `NaN` for an empty slice, `n <= ddof`, or any non-finite
 /// observation. A finite constant sample with a positive divisor returns zero,
-/// including a singleton with population normalization. Even `Ddof(usize::MAX)`
-/// returns `NaN` for insufficient observations without overflowing the count
-/// arithmetic.
+/// including a singleton with population normalization.
 ///
 /// Uses scaling, corrected centering, and compensated summation to reduce
 /// numerical error. Takes the square root before restoring the scale, so the
@@ -68,6 +66,7 @@ pub fn std_dev(xs: &[f64], normalization: Normalization) -> f64 {
 mod tests {
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq, assert_approx_eq};
+    use test_utils::assertions::assert_nan_for_nonfinite_inputs;
     use test_utils::strategies::{
         MAX_SAMPLE_LEN, constant_sample, exact_translation_case, finite_sample, nonfinite_value,
         positive_power_of_two_scale,
@@ -101,35 +100,11 @@ mod tests {
     }
 
     #[test]
-    fn returns_nan_for_nan_input() {
-        let xs = [1.0, f64::NAN, 3.0];
+    fn returns_nan_for_nonfinite_observations() {
+        let sample = [1.0, 2.0, 3.0];
 
         for normalization in NORMALIZATIONS {
-            let result = std_dev(&xs, normalization);
-
-            assert!(result.is_nan());
-        }
-    }
-
-    #[test]
-    fn returns_nan_for_positive_infinity() {
-        let xs = [1.0, f64::INFINITY, 3.0];
-
-        for normalization in NORMALIZATIONS {
-            let result = std_dev(&xs, normalization);
-
-            assert!(result.is_nan());
-        }
-    }
-
-    #[test]
-    fn returns_nan_for_negative_infinity() {
-        let xs = [1.0, f64::NEG_INFINITY, 3.0];
-
-        for normalization in NORMALIZATIONS {
-            let result = std_dev(&xs, normalization);
-
-            assert!(result.is_nan());
+            assert_nan_for_nonfinite_inputs(|xs| std_dev(xs, normalization), &sample);
         }
     }
 

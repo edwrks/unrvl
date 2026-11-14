@@ -60,6 +60,7 @@ pub fn mean(xs: &[f64]) -> f64 {
 mod tests {
     use proptest::prelude::*;
     use test_utils::approx::{Tolerance, approx_eq, assert_approx_eq};
+    use test_utils::assertions::assert_nan_for_nonfinite_inputs;
     use test_utils::strategies::{
         constant_sample, exact_translation_case, finite_sample, positive_power_of_two_scale,
     };
@@ -76,27 +77,8 @@ mod tests {
     }
 
     #[test]
-    fn returns_nan_for_nan_input() {
-        let xs = &[1.0, 2.0, f64::NAN];
-        let result = mean(xs);
-
-        assert!(result.is_nan());
-    }
-
-    #[test]
-    fn returns_nan_for_positive_infinity() {
-        let xs = &[1.0, 2.0, f64::INFINITY];
-        let result = mean(xs);
-
-        assert!(result.is_nan());
-    }
-
-    #[test]
-    fn returns_nan_for_negative_infinity() {
-        let xs = &[1.0, 2.0, f64::NEG_INFINITY];
-        let result = mean(xs);
-
-        assert!(result.is_nan());
+    fn returns_nan_for_nonfinite_observations() {
+        assert_nan_for_nonfinite_inputs(mean, &[1.0, 2.0, 3.0]);
     }
 
     #[test]
@@ -180,7 +162,6 @@ mod tests {
             let x = mean(&sample) + offset;
             let y = mean(&translated);
             prop_assert!(approx_eq(x, y, Tolerance::DEFAULT));
-
         }
 
         #[test]
@@ -192,7 +173,6 @@ mod tests {
             let x = mean(&sample) * scale;
             let y = mean(&scaled);
             prop_assert!(approx_eq(x, y, Tolerance::DEFAULT));
-
         }
 
         #[test]

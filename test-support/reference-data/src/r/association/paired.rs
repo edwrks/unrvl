@@ -14,7 +14,7 @@
 //! assert_eq!(reference.statistics().n(), reference.x().len());
 //! ```
 
-use crate::r::parsing::{parse_correlation, parse_finite, parse_usize};
+use crate::r::parsing::{parse_correlation, parse_finite, parse_usize, unique_reference_row};
 
 /// A bundled R paired association dataset.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -264,12 +264,7 @@ impl Parser {
             "paired reference CSV header should match the expected schema"
         );
 
-        let row = reference
-            .find(|line| {
-                line.split_once(',')
-                    .is_some_and(|(row_case, _)| row_case == case)
-            })
-            .expect("paired reference data should contain the requested case");
+        let row = unique_reference_row(reference, case, "paired reference");
 
         let fields: Vec<_> = row.split(',').collect();
 
