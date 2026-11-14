@@ -35,7 +35,13 @@ pub enum AvailableAsOfOutcome {
     /// The latest available observation is older than the age limit.
     ///
     /// Newer observations may exist but are not yet available.
-    TooOld,
+    TooOld {
+        /// Index of the stale, available candidate in the supplied right view.
+        right_index: usize,
+
+        /// Elapsed time from the candidate's observation to the left timestamp.
+        age: Duration,
+    },
 }
 
 /// A left observation and the outcome of its availability-aware as-of lookup.
@@ -135,7 +141,9 @@ impl AvailableAsOfAlignment<'_, '_> {
                     }
                     Entry::NoPriorObservation => AvailableAsOfOutcome::NoPriorObservation,
                     Entry::NotYetAvailable => AvailableAsOfOutcome::NotYetAvailable,
-                    Entry::TooOld => AvailableAsOfOutcome::TooOld,
+                    Entry::TooOld { right_index, age } => {
+                        AvailableAsOfOutcome::TooOld { right_index, age }
+                    }
                 };
 
                 AvailableAsOfRow {
@@ -153,7 +161,7 @@ enum Entry {
     Matched { right_index: usize, age: Duration },
     NoPriorObservation,
     NotYetAvailable,
-    TooOld,
+    TooOld { right_index: usize, age: Duration },
 }
 
 /// Matches each left observation to the latest right observation already
@@ -266,7 +274,7 @@ pub fn as_of_available<'left, 'right>(
             entries.push(Entry::Matched { right_index, age });
         } else {
             too_old += 1;
-            entries.push(Entry::TooOld);
+            entries.push(Entry::TooOld { right_index, age });
         }
     }
 
@@ -295,6 +303,7 @@ mod tests {
         let available_at = [2, 5, 6].map(Timestamp::from_unix_nanos);
         let left = SeriesView::new(&left_times, &left_values).unwrap();
         let prices = SeriesView::new(&right_times, &right_values).unwrap();
+
         let right = AvailabilityView::new(prices, &available_at).unwrap();
 
         let aligned = as_of_available(left, right, Duration::from_nanos(3));
@@ -313,7 +322,7 @@ mod tests {
             AvailableAsOfOutcome::NotYetAvailable,
             matched(0, 2, 2),
             matched(0, 3, 2),
-            AvailableAsOfOutcome::TooOld,
+            AvailableAsOfOutcome::TooOld { right_index: 0, age: Duration::from_nanos(4) },
             matched(1, 3, 3),
             matched(2, 2, 2),
         ];
@@ -344,8 +353,11 @@ mod tests {
         let right_times = [0, 2, 4, 6].map(Timestamp::from_unix_nanos);
 
         let available_at = [7, 5, 5, 6].map(Timestamp::from_unix_nanos);
-        let left = SeriesView::new(&left_times, &[1.0; 5]).unwrap();
-        let prices = SeriesView::new(&right_times, &[100.0, 102.0, 104.0, 106.0]).unwrap();
+        let left_values = [1.0; 5];
+        let right_values = [100.0, 102.0, 104.0, 106.0];
+        let left = SeriesView::new(&left_times, &left_values).unwrap();
+        let prices = SeriesView::new(&right_times, &right_values).unwrap();
+
         let right = AvailabilityView::new(prices, &available_at).unwrap();
 
         let aligned = as_of_available(left, right, Duration::MAX);
@@ -367,6 +379,7 @@ mod tests {
     fn handles_empty_views() {
         let empty = SeriesView::new(&[], &[]).unwrap();
         let single = SeriesView::new(&[Timestamp::UNIX_EPOCH], &[1.0]).unwrap();
+
         let available = AvailabilityView::new(single, &[Timestamp::UNIX_EPOCH]).unwrap();
 
         let aligned = as_of_available(empty, available, Duration::ZERO);
@@ -374,6 +387,7 @@ mod tests {
         assert_eq!(aligned.iter().next(), None);
 
         let available = AvailabilityView::new(empty, &[]).unwrap();
+
         let aligned = as_of_available(single, available, Duration::MAX);
         assert_eq!(aligned.len(), 1);
         assert_eq!(aligned.no_prior_count(), 1);
@@ -389,8 +403,10 @@ mod tests {
         let right_times = [0, 2].map(Timestamp::from_unix_nanos);
 
         let available_at = [1, 2].map(Timestamp::from_unix_nanos);
-        let left = SeriesView::new(&left_times, &[1.0; 3]).unwrap();
+        let left_values = [1.0; 3];
+        let left = SeriesView::new(&left_times, &left_values).unwrap();
         let prices = SeriesView::new(&right_times, &[100.0, 102.0]).unwrap();
+
         let right = AvailabilityView::new(prices, &available_at).unwrap();
 
         let aligned = as_of_available(left, right, Duration::ZERO);
@@ -400,7 +416,10 @@ mod tests {
             rows.next().unwrap().outcome,
             AvailableAsOfOutcome::NotYetAvailable,
         );
-        assert_eq!(rows.next().unwrap().outcome, AvailableAsOfOutcome::TooOld);
+        assert_eq!(
+            rows.next().unwrap().outcome,
+            AvailableAsOfOutcome::TooOld { right_index: 0, age: Duration::from_nanos(1) },
+        );
         assert_eq!(
             rows.next().unwrap().outcome,
             AvailableAsOfOutcome::Matched {
@@ -418,6 +437,7 @@ mod tests {
     fn computes_age_and_delay_exactly_across_the_full_timestamp_span() {
         let left = SeriesView::new(&[Timestamp::MAX], &[1.0]).unwrap();
         let prices = SeriesView::new(&[Timestamp::MIN], &[100.0]).unwrap();
+
         let right = AvailabilityView::new(prices, &[Timestamp::MAX]).unwrap();
         let span = Duration::from_nanos(u64::MAX);
 
@@ -435,10 +455,11 @@ mod tests {
         );
 
         let just_below_span = Duration::from_nanos(u64::MAX - 1);
+
         let aligned = as_of_available(left, right, just_below_span);
         assert_eq!(
             aligned.iter().next().unwrap().outcome,
-            AvailableAsOfOutcome::TooOld,
+            AvailableAsOfOutcome::TooOld { right_index: 0, age: span },
         );
     }
 
@@ -448,12 +469,14 @@ mod tests {
         let right_times = [-1, 0, 2].map(Timestamp::from_unix_nanos);
 
         let available_at = [-1, 0, 3].map(Timestamp::from_unix_nanos);
-        let left = SeriesView::new(&left_times, &[10.0, 30.0, 40.0]).unwrap();
-        let prices = SeriesView::new(&right_times, &[99.0, 100.0, 102.0]).unwrap();
+        let left_values = [10.0, 30.0, 40.0];
+        let right_values = [99.0, 100.0, 102.0];
+        let left = SeriesView::new(&left_times, &left_values).unwrap();
+        let prices = SeriesView::new(&right_times, &right_values).unwrap();
 
         let left = left.between(left_times[1]..).unwrap();
-        let prices = prices.between(Timestamp::UNIX_EPOCH..).unwrap();
-        let right = AvailabilityView::new(prices, &available_at[1..]).unwrap();
+        let right = AvailabilityView::new(prices, &available_at).unwrap();
+        let right = right.between(Timestamp::UNIX_EPOCH..).unwrap();
 
         let aligned = as_of_available(left, right, Duration::MAX);
         let row = aligned.iter().next().unwrap();
@@ -465,6 +488,15 @@ mod tests {
             row.outcome,
             AvailableAsOfOutcome::Matched { right_index: 1, right_value: 102.0, .. },
         ));
+
+        let stale = as_of_available(left, right, Duration::ZERO);
+        let row = stale.iter().next().unwrap();
+
+        assert_eq!(row.left_index, 0);
+        assert_eq!(
+            row.outcome,
+            AvailableAsOfOutcome::TooOld { right_index: 1, age: Duration::from_nanos(1) },
+        );
     }
 
     #[test]
@@ -472,8 +504,9 @@ mod tests {
         let left_times: Vec<_> = (-1..=10).map(Timestamp::from_unix_nanos).collect();
         let left_values = vec![1.0; left_times.len()];
         let right_times = [0, 2, 4, 6].map(Timestamp::from_unix_nanos);
+        let right_values = [100.0, 102.0, 104.0, 106.0];
         let left = SeriesView::new(&left_times, &left_values).unwrap();
-        let prices = SeriesView::new(&right_times, &[100.0, 102.0, 104.0, 106.0]).unwrap();
+        let prices = SeriesView::new(&right_times, &right_values).unwrap();
         let cases = [
             ([0, 2, 4, 6], Duration::ZERO),
             ([7, 5, 5, 6], Duration::from_nanos(2)),
@@ -484,7 +517,9 @@ mod tests {
 
         for (availability_nanos, max_age) in cases {
             let available_at = availability_nanos.map(Timestamp::from_unix_nanos);
+
             let right = AvailabilityView::new(prices, &available_at).unwrap();
+
             let aligned = as_of_available(left, right, max_age);
             let actual: Vec<_> = aligned.iter().map(|row| row.outcome).collect();
             let expected: Vec<_> = left_times
@@ -524,7 +559,7 @@ mod tests {
 
         let age = query.checked_duration_since(times[index]).unwrap();
         if age > max_age {
-            return AvailableAsOfOutcome::TooOld;
+            return AvailableAsOfOutcome::TooOld { right_index: index, age };
         }
 
         AvailableAsOfOutcome::Matched {

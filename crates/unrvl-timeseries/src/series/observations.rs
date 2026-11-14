@@ -1,4 +1,4 @@
-use std::ops::{Bound, RangeBounds};
+use std::ops::{Bound, Range, RangeBounds};
 
 use thiserror::Error;
 
@@ -226,44 +226,9 @@ impl<'a> SeriesView<'a> {
     /// Returns [`SeriesError::ReversedRange`] if both endpoints are bounded
     /// and the start is later than the end, including for an empty source.
     pub fn between(&self, range: impl RangeBounds<Timestamp>) -> Result<Self, SeriesError> {
-        let start_bound = range.start_bound();
-        let end_bound = range.end_bound();
+        let indices = self.indices_between(range)?;
 
-        // Only explicitly bounded endpoints can form a reversed range.
-        if let (
-            Bound::Included(start) | Bound::Excluded(start),
-            Bound::Included(end) | Bound::Excluded(end),
-        ) = (start_bound, end_bound)
-            && start > end
-        {
-            return Err(SeriesError::ReversedRange { start: *start, end: *end });
-        }
-
-        let start_index = match start_bound {
-            Bound::Included(start) => self
-                .timestamps
-                .partition_point(|timestamp| timestamp < start),
-            Bound::Excluded(start) => self
-                .timestamps
-                .partition_point(|timestamp| timestamp <= start),
-            Bound::Unbounded => 0,
-        };
-
-        let timestamps = &self.timestamps[start_index..];
-        let values = &self.values[start_index..];
-
-        // Search the remaining slice so equal excluded endpoints naturally
-        // produce an empty view rather than inverted slice indices.
-        let end_index = match end_bound {
-            Bound::Included(end) => timestamps.partition_point(|timestamp| timestamp <= end),
-            Bound::Excluded(end) => timestamps.partition_point(|timestamp| timestamp < end),
-            Bound::Unbounded => timestamps.len(),
-        };
-
-        Ok(Self {
-            timestamps: &timestamps[..end_index],
-            values: &values[..end_index],
-        })
+        Ok(self.slice(indices))
     }
 
     /// Returns the original, strictly increasing timestamp slice.
@@ -289,6 +254,57 @@ impl<'a> SeriesView<'a> {
     #[must_use]
     pub const fn is_empty(&self) -> bool {
         self.values.is_empty()
+    }
+
+    /// Borrows an index range without structural revalidation. The caller
+    /// supplies indices within this view.
+    pub(crate) fn slice(&self, range: Range<usize>) -> Self {
+        Self {
+            timestamps: &self.timestamps[range.clone()],
+            values: &self.values[range],
+        }
+    }
+
+    /// Resolves observation-time bounds to indices within this view. Both
+    /// endpoints lie within `0..=len`, including for an empty result.
+    pub(crate) fn indices_between(
+        &self,
+        range: impl RangeBounds<Timestamp>,
+    ) -> Result<Range<usize>, SeriesError> {
+        let start_bound = range.start_bound();
+        let end_bound = range.end_bound();
+
+        // Only explicitly bounded endpoints can form a reversed range.
+        if let (
+            Bound::Included(start) | Bound::Excluded(start),
+            Bound::Included(end) | Bound::Excluded(end),
+        ) = (start_bound, end_bound)
+            && start > end
+        {
+            return Err(SeriesError::ReversedRange { start: *start, end: *end });
+        }
+
+        let start_index = match start_bound {
+            Bound::Included(start) => self
+                .timestamps
+                .partition_point(|timestamp| timestamp < start),
+            Bound::Excluded(start) => self
+                .timestamps
+                .partition_point(|timestamp| timestamp <= start),
+            Bound::Unbounded => 0,
+        };
+
+        let timestamps = &self.timestamps[start_index..];
+
+        // Search the remaining slice so equal excluded endpoints naturally
+        // produce an empty view rather than inverted slice indices.
+        let end_index = match end_bound {
+            Bound::Included(end) => timestamps.partition_point(|timestamp| timestamp <= end),
+            Bound::Excluded(end) => timestamps.partition_point(|timestamp| timestamp < end),
+            Bound::Unbounded => timestamps.len(),
+        };
+
+        Ok(start_index..start_index + end_index)
     }
 }
 

@@ -203,14 +203,7 @@ impl Session {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn interval(start_nanos: i64, end_nanos: i64) -> TimeInterval {
-        TimeInterval::new(
-            Timestamp::from_unix_nanos(start_nanos),
-            Timestamp::from_unix_nanos(end_nanos),
-        )
-        .unwrap()
-    }
+    use crate::test_helpers::interval;
 
     #[test]
     fn rejects_an_empty_identifier() {

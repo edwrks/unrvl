@@ -111,6 +111,7 @@ pub enum ScheduleStatus {
 ///     Timestamp::from_unix_secs(9 * 3600)?,
 ///     Timestamp::from_unix_secs(16 * 3600)?,
 /// )?;
+///
 /// let session = Session::new("regular", vec![opening])?;
 /// let schedule = SessionSchedule::new(coverage, vec![session])?;
 ///
@@ -318,18 +319,7 @@ impl SessionSchedule {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn interval(start_nanos: i64, end_nanos: i64) -> TimeInterval {
-        TimeInterval::new(
-            Timestamp::from_unix_nanos(start_nanos),
-            Timestamp::from_unix_nanos(end_nanos),
-        )
-        .unwrap()
-    }
-
-    fn session(id: &str, start_nanos: i64, end_nanos: i64) -> Session {
-        Session::new(id, vec![interval(start_nanos, end_nanos)]).unwrap()
-    }
+    use crate::test_helpers::{interval, session};
 
     mod construction {
         use super::*;
@@ -337,11 +327,10 @@ mod tests {
         #[test]
         fn rejects_duplicate_identifiers_with_the_first_occurrence() {
             let coverage = interval(0, 10);
-            let sessions = vec![
-                session("regular", 0, 2),
-                session("overnight", 3, 5),
-                session("regular", 6, 8),
-            ];
+            let regular = session("regular", 0, 2);
+            let overnight = session("overnight", 3, 5);
+            let duplicate_regular = session("regular", 6, 8);
+            let sessions = vec![regular, overnight, duplicate_regular];
             let error = SessionSchedule::new(coverage, sessions).unwrap_err();
 
             assert_eq!(
@@ -382,23 +371,21 @@ mod tests {
         #[test]
         fn rejects_overlapping_unordered_and_interleaved_session_envelopes() {
             let coverage = interval(0, 10);
+            let overlapping_first = session("first", 0, 4);
+            let overlapping_second = session("second", 3, 6);
+            let unordered_first = session("first", 4, 6);
+            let unordered_second = session("second", 0, 3);
 
             // The second session fits inside the first session's break, but
             // their envelopes overlap. Breaks cannot be assigned to
             // another session.
             let with_break = Session::new("first", vec![interval(0, 2), interval(6, 8)]).unwrap();
+            let during_break = session("second", 3, 5);
+
             let cases = [
-                (
-                    session("first", 0, 4),
-                    session("second", 3, 6),
-                    interval(0, 4),
-                ),
-                (
-                    session("first", 4, 6),
-                    session("second", 0, 3),
-                    interval(4, 6),
-                ),
-                (with_break, session("second", 3, 5), interval(0, 8)),
+                (overlapping_first, overlapping_second, interval(0, 4)),
+                (unordered_first, unordered_second, interval(4, 6)),
+                (with_break, during_break, interval(0, 8)),
             ];
 
             for (first, second, previous) in cases {
@@ -422,12 +409,11 @@ mod tests {
         #[test]
         fn reports_the_first_invalid_session_before_later_failures() {
             let coverage = interval(0, 10);
-            let sessions = vec![
-                session("first", 0, 2),
-                session("second", 3, 5),
-                session("overlap", 4, 6),
-                session("first", 8, 12),
-            ];
+            let first = session("first", 0, 2);
+            let second = session("second", 3, 5);
+            let overlap = session("overlap", 4, 6);
+            let duplicate_first = session("first", 8, 12);
+            let sessions = vec![first, second, overlap, duplicate_first];
             let error = SessionSchedule::new(coverage, sessions).unwrap_err();
 
             assert!(matches!(
@@ -449,7 +435,8 @@ mod tests {
         fn preserves_the_supplied_sessions_and_their_buffer() {
             let coverage = interval(0, 10);
             let with_break = Session::new("first", vec![interval(1, 2), interval(4, 6)]).unwrap();
-            let sessions = vec![with_break, session("second", 7, 9)];
+            let second = session("second", 7, 9);
+            let sessions = vec![with_break, second];
             let sessions_ptr = sessions.as_ptr();
             let schedule = SessionSchedule::new(coverage, sessions).unwrap();
 
@@ -466,7 +453,9 @@ mod tests {
         #[test]
         fn accepts_adjacent_envelopes_at_the_coverage_boundaries() {
             let coverage = interval(0, 10);
-            let sessions = vec![session("first", 0, 5), session("second", 5, 10)];
+            let first = session("first", 0, 5);
+            let second = session("second", 5, 10);
+            let sessions = vec![first, second];
             let schedule = SessionSchedule::new(coverage, sessions).unwrap();
 
             assert_eq!(schedule.sessions().len(), 2);
@@ -475,11 +464,10 @@ mod tests {
         #[test]
         fn compares_opaque_identifiers_exactly() {
             let coverage = interval(0, 3);
-            let sessions = vec![
-                session("venue", 0, 1),
-                session("Venue", 1, 2),
-                session(" venue ", 2, 3),
-            ];
+            let venue = session("venue", 0, 1);
+            let capitalized = session("Venue", 1, 2);
+            let padded = session(" venue ", 2, 3);
+            let sessions = vec![venue, capitalized, padded];
             let schedule = SessionSchedule::new(coverage, sessions).unwrap();
             let identifiers: Vec<_> = schedule.sessions().iter().map(Session::id).collect();
 
@@ -489,11 +477,10 @@ mod tests {
         #[test]
         fn supports_overnight_sessions_and_the_full_timestamp_span() {
             let coverage = TimeInterval::new(Timestamp::MIN, Timestamp::MAX).unwrap();
-            let sessions = vec![
-                session("before", i64::MIN, -1),
-                session("across midnight", -1, 1),
-                session("after", 1, i64::MAX),
-            ];
+            let before = session("before", i64::MIN, -1);
+            let across_midnight = session("across midnight", -1, 1);
+            let after = session("after", 1, i64::MAX);
+            let sessions = vec![before, across_midnight, after];
             let schedule = SessionSchedule::new(coverage, sessions).unwrap();
 
             assert_eq!(schedule.coverage(), coverage);
@@ -507,7 +494,9 @@ mod tests {
         #[test]
         fn describes_invalid_sequences_with_both_identifiers_and_units() {
             let coverage = interval(0, 10);
-            let sessions = vec![session("first", 0, 3), session("second", 2, 5)];
+            let first = session("first", 0, 3);
+            let second = session("second", 2, 5);
+            let sessions = vec![first, second];
             let error = SessionSchedule::new(coverage, sessions).unwrap_err();
 
             assert_eq!(
@@ -525,7 +514,8 @@ mod tests {
         fn finds_the_open_session_across_a_break_and_shared_boundary() {
             let coverage = interval(0, 10);
             let split = Session::new("split", vec![interval(1, 3), interval(4, 6)]).unwrap();
-            let sessions = vec![split, session("later", 6, 9)];
+            let later = session("later", 6, 9);
+            let sessions = vec![split, later];
             let schedule = SessionSchedule::new(coverage, sessions).unwrap();
 
             let cases = [
@@ -549,7 +539,8 @@ mod tests {
         fn distinguishes_open_periods_breaks_gaps_and_uncovered_time() {
             let coverage = interval(0, 10);
             let split = Session::new("split", vec![interval(1, 3), interval(4, 6)]).unwrap();
-            let sessions = vec![split, session("later", 7, 9)];
+            let later = session("later", 7, 9);
+            let sessions = vec![split, later];
             let schedule = SessionSchedule::new(coverage, sessions).unwrap();
 
             let cases = [
@@ -576,7 +567,9 @@ mod tests {
         #[test]
         fn stays_open_at_the_boundary_between_adjacent_sessions() {
             let coverage = interval(0, 10);
-            let sessions = vec![session("first", 0, 5), session("second", 5, 10)];
+            let first = session("first", 0, 5);
+            let second = session("second", 5, 10);
+            let sessions = vec![first, second];
             let schedule = SessionSchedule::new(coverage, sessions).unwrap();
 
             assert_eq!(
@@ -608,7 +601,9 @@ mod tests {
         fn navigates_sessions_by_first_open_and_final_close() {
             let coverage = interval(0, 12);
             let split = Session::new("split", vec![interval(3, 5), interval(6, 8)]).unwrap();
-            let sessions = vec![session("first", 1, 3), split, session("last", 9, 11)];
+            let first = session("first", 1, 3);
+            let last = session("last", 9, 11);
+            let sessions = vec![first, split, last];
             let schedule = SessionSchedule::new(coverage, sessions).unwrap();
 
             let cases = [
@@ -650,7 +645,9 @@ mod tests {
         fn sums_open_time_within_covered_ranges() {
             let coverage = interval(-2, 15);
             let split = Session::new("split", vec![interval(-1, 2), interval(4, 7)]).unwrap();
-            let sessions = vec![split, session("adjacent", 7, 10), session("last", 12, 14)];
+            let adjacent = session("adjacent", 7, 10);
+            let last = session("last", 12, 14);
+            let sessions = vec![split, adjacent, last];
             let schedule = SessionSchedule::new(coverage, sessions).unwrap();
 
             let cases = [
@@ -674,7 +671,8 @@ mod tests {
         #[test]
         fn open_duration_requires_the_whole_range_to_be_covered() {
             let coverage = interval(0, 10);
-            let sessions = vec![session("regular", 1, 9)];
+            let regular = session("regular", 1, 9);
+            let sessions = vec![regular];
             let schedule = SessionSchedule::new(coverage, sessions).unwrap();
 
             for range in [interval(-1, 5), interval(5, 11), interval(10, 12)] {
@@ -695,7 +693,8 @@ mod tests {
     fn labels_final_closes_at_shared_boundaries_and_the_end_of_coverage() {
         let coverage = interval(0, 10);
         let split = Session::new("split", vec![interval(1, 3), interval(4, 6)]).unwrap();
-        let sessions = vec![split, session("later", 6, 10)];
+        let later = session("later", 6, 10);
+        let sessions = vec![split, later];
         let schedule = SessionSchedule::new(coverage, sessions).unwrap();
 
         let labels: Vec<_> = schedule

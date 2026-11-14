@@ -248,10 +248,7 @@ pub fn inner_slots<'left, 'right>(
 mod tests {
     use super::*;
     use crate::cadence::FixedGrid;
-
-    fn timestamp(nanos: i64) -> Timestamp {
-        Timestamp::from_unix_nanos(nanos)
-    }
+    use crate::test_helpers::timestamp;
 
     fn grid(origin_nanos: i64, spacing_nanos: u64, tolerance_nanos: u64) -> FixedGrid {
         FixedGrid::new(
@@ -265,6 +262,7 @@ mod tests {
     #[test]
     fn rejects_different_spacing_before_checking_phase_even_for_empty_sources() {
         let empty = SeriesView::new(&[], &[]).unwrap();
+
         let left = GridCoverage::new(empty, grid(0, 10, 0), ..).unwrap();
         let right = GridCoverage::new(empty, grid(1, 20, 0), ..).unwrap();
         let error = inner_slots(&left, &right).unwrap_err();
@@ -291,6 +289,7 @@ mod tests {
         for spacing in [Duration::from_nanos(10), Duration::MAX] {
             let left_grid = FixedGrid::new(left_origin, spacing, Duration::ZERO).unwrap();
             let right_grid = FixedGrid::new(right_origin, spacing, Duration::ZERO).unwrap();
+
             let left = GridCoverage::new(empty, left_grid, ..).unwrap();
             let right = GridCoverage::new(empty, right_grid, ..).unwrap();
             let error = inner_slots(&left, &right).unwrap_err();
@@ -306,8 +305,10 @@ mod tests {
     fn pairs_equivalent_grid_labels_and_preserves_both_sources() {
         let left_times = [-9, 1, 19, 31].map(timestamp);
         let right_times = [-1, 11, 20, 39, 51].map(timestamp);
-        let left = SeriesView::new(&left_times, &[91.0, 101.0, 119.0, 131.0]).unwrap();
-        let right = SeriesView::new(&right_times, &[200.0, 210.0, 220.0, 240.0, 250.0]).unwrap();
+        let left_values = [91.0, 101.0, 119.0, 131.0];
+        let right_values = [200.0, 210.0, 220.0, 240.0, 250.0];
+        let left = SeriesView::new(&left_times, &left_values).unwrap();
+        let right = SeriesView::new(&right_times, &right_values).unwrap();
 
         // Origins differ by three steps; tolerances and analysis ranges differ.
         let left =
@@ -358,8 +359,10 @@ mod tests {
         let right_times = [timestamp(10)];
         let left = SeriesView::new(&left_times, &[100.0]).unwrap();
         let right = SeriesView::new(&right_times, &[110.0]).unwrap();
+
         let empty = GridCoverage::new(empty, grid, timestamp(0)..=timestamp(10)).unwrap();
         let left = GridCoverage::new(left, grid, timestamp(0)..=timestamp(0)).unwrap();
+
         let right = GridCoverage::new(right, grid, timestamp(10)..=timestamp(10)).unwrap();
         let cases = [
             (&empty, &empty),
@@ -384,13 +387,15 @@ mod tests {
         let left_times = [-11, -1, 11].map(timestamp);
         let right_times = [-1, 9].map(timestamp);
 
-        let left = SeriesView::new(&left_times, &[90.0, 100.0, 120.0]).unwrap();
+        let left_values = [90.0, 100.0, 120.0];
+        let left = SeriesView::new(&left_times, &left_values).unwrap();
         let right = SeriesView::new(&right_times, &[200.0, 210.0]).unwrap();
 
         let left = left.between(timestamp(-1)..).unwrap();
         let right = right.between(timestamp(0)..).unwrap();
 
         let grid = grid(0, 10, 1);
+
         let left = GridCoverage::new(left, grid, timestamp(0)..=timestamp(10)).unwrap();
         let right = GridCoverage::new(right, grid, timestamp(0)..=timestamp(10)).unwrap();
 

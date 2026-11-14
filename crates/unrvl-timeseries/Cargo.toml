@@ -12,6 +12,8 @@ readme = "README.md"
 
 [dependencies]
 thiserror.workspace = true
+unrvl-numerics.workspace = true
+unrvl-stats.workspace = true
 
 [lints]
 workspace = true

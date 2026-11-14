@@ -478,10 +478,7 @@ fn gap(first: i128, last: i128, spacing: i128) -> SlotGap {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn timestamp(nanos: i64) -> Timestamp {
-        Timestamp::from_unix_nanos(nanos)
-    }
+    use crate::test_helpers::timestamp;
 
     fn grid(origin_nanos: i64, spacing_nanos: u64, tolerance_nanos: u64) -> FixedGrid {
         FixedGrid::new(
@@ -520,7 +517,9 @@ mod tests {
 
             for (actual, nearest_nanos) in cases {
                 let timestamps = [-9, 1, actual, 26].map(timestamp);
-                let series = SeriesView::new(&timestamps, &[100.0; 4]).unwrap();
+                let values = [100.0; 4];
+                let series = SeriesView::new(&timestamps, &values).unwrap();
+
                 let error = GridCoverage::new(series, grid, ..).unwrap_err();
 
                 assert_eq!(
@@ -543,6 +542,7 @@ mod tests {
                 Bound::Included(timestamp(0)),
                 Bound::Excluded(timestamp(10)),
             );
+
             let error = GridCoverage::new(series, grid(0, 10, 2), bounds).unwrap_err();
 
             // The actual timestamp is inside the range, but its slot label is
@@ -562,6 +562,7 @@ mod tests {
         fn rejects_two_observations_in_the_same_slot_with_both_indices() {
             let timestamps = [-1, 0].map(timestamp);
             let series = SeriesView::new(&timestamps, &[100.0, 101.0]).unwrap();
+
             let error = GridCoverage::new(series, grid(0, 10, 2), ..).unwrap_err();
 
             assert_eq!(
@@ -593,6 +594,7 @@ mod tests {
                     .unwrap();
                 let timestamps = [actual];
                 let series = SeriesView::new(&timestamps, &[100.0]).unwrap();
+
                 let error = GridCoverage::new(series, grid, ..).unwrap_err();
 
                 assert_eq!(
@@ -616,6 +618,7 @@ mod tests {
                 Bound::Included(timestamp(-20)),
                 Bound::Included(timestamp(32)),
             );
+
             let coverage = GridCoverage::new(series, grid, bounds).unwrap();
 
             assert!(std::ptr::eq(coverage.series().timestamps(), &timestamps));
@@ -669,6 +672,7 @@ mod tests {
         fn bounds_select_grid_labels_and_allow_jitter_on_both_sides() {
             let timestamps = [-2, 12].map(timestamp);
             let series = SeriesView::new(&timestamps, &[100.0, 101.0]).unwrap();
+
             let coverage =
                 GridCoverage::new(series, grid(0, 10, 2), timestamp(0)..=timestamp(10)).unwrap();
 
@@ -681,6 +685,7 @@ mod tests {
         #[test]
         fn an_empty_series_reports_all_expected_slots_as_one_gap() {
             let series = SeriesView::new(&[], &[]).unwrap();
+
             let coverage =
                 GridCoverage::new(series, grid(1, 10, 0), timestamp(-15)..timestamp(25)).unwrap();
 
@@ -701,8 +706,10 @@ mod tests {
         #[test]
         fn indices_are_relative_to_the_supplied_view() {
             let timestamps = [-10, 0, 10].map(timestamp);
-            let series = SeriesView::new(&timestamps, &[90.0, 100.0, 110.0]).unwrap();
+            let values = [90.0, 100.0, 110.0];
+            let series = SeriesView::new(&timestamps, &values).unwrap();
             let selected = series.between(timestamp(0)..).unwrap();
+
             let coverage =
                 GridCoverage::new(selected, grid(0, 10, 0), timestamp(0)..=timestamp(10)).unwrap();
 
@@ -796,6 +803,7 @@ mod tests {
         #[test]
         fn reports_the_full_one_nanosecond_grid_without_materializing_its_slots() {
             let series = SeriesView::new(&[], &[]).unwrap();
+
             let coverage = GridCoverage::new(series, grid(0, 1, 0), ..).unwrap();
 
             // Both endpoints are included: one more label than u64::MAX.
@@ -819,6 +827,7 @@ mod tests {
             let series = SeriesView::new(&timestamps, &[100.0, 101.0]).unwrap();
             let spacing = Duration::from_nanos(u64::MAX);
             let grid = FixedGrid::new(Timestamp::MIN, spacing, Duration::ZERO).unwrap();
+
             let coverage = GridCoverage::new(series, grid, ..).unwrap();
 
             assert_eq!(coverage.expected_count(), 2);
@@ -829,6 +838,7 @@ mod tests {
             let series = SeriesView::new(&[Timestamp::UNIX_EPOCH], &[100.0]).unwrap();
             let grid =
                 FixedGrid::new(Timestamp::UNIX_EPOCH, Duration::MAX, Duration::ZERO).unwrap();
+
             let coverage = GridCoverage::new(series, grid, ..).unwrap();
 
             assert_eq!(coverage.expected_count(), 1);
@@ -840,6 +850,7 @@ mod tests {
             let distant = (1_i64 << 53) + 1;
             let timestamps = [distant, distant + 2].map(timestamp);
             let series = SeriesView::new(&timestamps, &[100.0, 102.0]).unwrap();
+
             let coverage =
                 GridCoverage::new(series, grid(distant, 1, 0), timestamps[0]..=timestamps[1])
                     .unwrap();
@@ -870,6 +881,7 @@ mod tests {
             let timestamps: Vec<_> = nanos.into_iter().map(timestamp).collect();
             let values = vec![100.0; timestamps.len()];
             let series = SeriesView::new(&timestamps, &values).unwrap();
+
             let coverage = GridCoverage::new(series, grid, timestamp(-20)..=timestamp(20)).unwrap();
 
             // Match against explicit labels rather than repeating grid

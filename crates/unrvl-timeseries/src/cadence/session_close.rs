@@ -349,14 +349,7 @@ impl<'a, 's> SessionCloseCoverage<'a, 's> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    fn timestamp(nanos: i64) -> Timestamp {
-        Timestamp::from_unix_nanos(nanos)
-    }
-
-    fn interval(start: i64, end: i64) -> TimeInterval {
-        TimeInterval::new(timestamp(start), timestamp(end)).unwrap()
-    }
+    use crate::test_helpers::{interval, timestamp};
 
     fn schedule() -> SessionSchedule {
         let coverage = interval(0, 10);
@@ -377,6 +370,7 @@ mod tests {
         #[test]
         fn checks_reversed_bounds_before_coverage_or_observations() {
             let schedule = schedule();
+
             let timestamps = [timestamp(1)];
             let unexpected = SeriesView::new(&timestamps, &[100.0]).unwrap();
             let empty = SeriesView::new(&[], &[]).unwrap();
@@ -393,6 +387,7 @@ mod tests {
         #[test]
         fn rejects_unknown_analysis_periods_even_without_observations() {
             let schedule = schedule();
+
             let empty = SeriesView::new(&[], &[]).unwrap();
             let bounds = [
                 (Bound::Included(timestamp(-1)), Bound::Unbounded),
@@ -434,6 +429,7 @@ mod tests {
                 let timestamps: Vec<_> = nanos.into_iter().map(timestamp).collect();
                 let values = vec![100.0; timestamps.len()];
                 let series = SeriesView::new(&timestamps, &values).unwrap();
+
                 let error = SessionCloseCoverage::new(series, &schedule, ..).unwrap_err();
 
                 assert_eq!(
@@ -449,6 +445,7 @@ mod tests {
             let bounds = (Bound::Included(timestamp(4)), Bound::Excluded(timestamp(8)));
             let timestamps = [4, 8].map(timestamp);
             let series = SeriesView::new(&timestamps, &[100.0, 101.0]).unwrap();
+
             let error = SessionCloseCoverage::new(series, &schedule, bounds).unwrap_err();
 
             assert_eq!(
@@ -464,8 +461,10 @@ mod tests {
         #[test]
         fn rejects_observations_during_a_covered_closure() {
             let schedule = SessionSchedule::new(interval(0, 10), vec![]).unwrap();
+
             let timestamps = [timestamp(5)];
             let series = SeriesView::new(&timestamps, &[100.0]).unwrap();
+
             let error = SessionCloseCoverage::new(series, &schedule, ..).unwrap_err();
 
             assert_eq!(
@@ -481,9 +480,11 @@ mod tests {
         #[test]
         fn preserves_sources_and_reports_leading_internal_and_trailing_gaps() {
             let schedule = schedule();
+
             let timestamps = [4, 8].map(timestamp);
             let values = [100.0, 102.0];
             let series = SeriesView::new(&timestamps, &values).unwrap();
+
             let coverage = SessionCloseCoverage::new(series, &schedule, ..).unwrap();
 
             assert!(std::ptr::eq(coverage.series().timestamps(), &timestamps));
@@ -556,7 +557,9 @@ mod tests {
         #[test]
         fn an_empty_series_reports_all_selected_sessions_as_one_gap() {
             let schedule = schedule();
+
             let empty = SeriesView::new(&[], &[]).unwrap();
+
             let coverage =
                 SessionCloseCoverage::new(empty, &schedule, timestamp(4)..=timestamp(8)).unwrap();
             let expected_gap = 1..4;
@@ -598,6 +601,7 @@ mod tests {
             assert_eq!(missing, [("after-break", next_close)]);
 
             let empty = SeriesView::new(&[], &[]).unwrap();
+
             let closure = SessionCloseCoverage::new(empty, &schedule, at(24)..at(3 * 24)).unwrap();
 
             assert_eq!(closure.expected_count(), 0);
@@ -607,7 +611,9 @@ mod tests {
         #[test]
         fn a_covered_closure_has_no_expected_observations() {
             let schedule = SessionSchedule::new(interval(0, 10), vec![]).unwrap();
+
             let empty = SeriesView::new(&[], &[]).unwrap();
+
             let coverage = SessionCloseCoverage::new(empty, &schedule, ..).unwrap();
 
             assert_eq!(coverage.expected_count(), 0);
@@ -620,10 +626,13 @@ mod tests {
         #[test]
         fn indices_are_relative_to_the_supplied_series_view() {
             let schedule = schedule();
+
             let timestamps = [-2, 2, 4, 8, 12].map(timestamp);
-            let series = SeriesView::new(&timestamps, &[99.0, 100.0, 101.0, 102.0, 103.0]).unwrap();
+            let values = [99.0, 100.0, 101.0, 102.0, 103.0];
+            let series = SeriesView::new(&timestamps, &values).unwrap();
             let bounds = timestamp(2)..=timestamp(8);
             let selected = series.between(bounds.clone()).unwrap();
+
             let coverage = SessionCloseCoverage::new(selected, &schedule, bounds).unwrap();
             let rows: Vec<_> = coverage
                 .iter()
@@ -649,6 +658,7 @@ mod tests {
         #[test]
         fn bounds_select_close_labels_with_each_endpoint_convention() {
             let schedule = schedule();
+
             let empty = SeriesView::new(&[], &[]).unwrap();
             let start = timestamp(4);
             let end = timestamp(8);
@@ -676,6 +686,7 @@ mod tests {
         #[test]
         fn equal_endpoints_select_a_close_only_when_both_are_inclusive() {
             let schedule = schedule();
+
             let empty = SeriesView::new(&[], &[]).unwrap();
             let close = timestamp(4);
             let cases = [
@@ -700,6 +711,7 @@ mod tests {
         #[test]
         fn excluding_a_coverage_endpoint_can_select_no_closes() {
             let schedule = schedule();
+
             let empty = SeriesView::new(&[], &[]).unwrap();
             let start = schedule.coverage().start();
             let end = schedule.coverage().end();
@@ -716,7 +728,9 @@ mod tests {
         #[test]
         fn unbounded_ranges_resolve_to_both_coverage_endpoints_inclusive() {
             let schedule = schedule();
+
             let empty = SeriesView::new(&[], &[]).unwrap();
+
             let coverage = SessionCloseCoverage::new(empty, &schedule, ..).unwrap();
 
             assert_eq!(
@@ -726,6 +740,7 @@ mod tests {
 
             let timestamps = [timestamp(-1)];
             let outside = SeriesView::new(&timestamps, &[100.0]).unwrap();
+
             let error = SessionCloseCoverage::new(outside, &schedule, ..).unwrap_err();
 
             assert_eq!(
@@ -747,8 +762,10 @@ mod tests {
             let first = Session::new("first", vec![first_open]).unwrap();
             let second = Session::new("second", vec![second_open]).unwrap();
             let schedule = SessionSchedule::new(coverage, vec![first, second]).unwrap();
+
             let timestamps = [first_close, Timestamp::MAX];
             let series = SeriesView::new(&timestamps, &[100.0, 101.0]).unwrap();
+
             let coverage = SessionCloseCoverage::new(series, &schedule, ..).unwrap();
             let labels: Vec<_> = coverage.iter().map(|row| row.timestamp).collect();
 

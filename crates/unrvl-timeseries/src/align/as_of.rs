@@ -25,7 +25,13 @@ pub enum AsOfOutcome {
 
     /// The latest right observation at or before the left timestamp is older
     /// than the age limit.
-    TooOld,
+    TooOld {
+        /// Index of the stale candidate in the supplied right view.
+        right_index: usize,
+
+        /// Elapsed time from the candidate's observation to the left timestamp.
+        age: Duration,
+    },
 }
 
 /// A left observation and the outcome of its as-of lookup.
@@ -98,7 +104,7 @@ impl AsOfAlignment<'_, '_> {
                     age,
                 },
                 Entry::NoPriorObservation => AsOfOutcome::NoPriorObservation,
-                Entry::TooOld => AsOfOutcome::TooOld,
+                Entry::TooOld { right_index, age } => AsOfOutcome::TooOld { right_index, age },
             };
 
             AsOfRow {
@@ -115,7 +121,7 @@ impl AsOfAlignment<'_, '_> {
 enum Entry {
     Matched { right_index: usize, age: Duration },
     NoPriorObservation,
-    TooOld,
+    TooOld { right_index: usize, age: Duration },
 }
 
 /// Matches each left observation to the latest right observation at or before
@@ -187,7 +193,7 @@ pub fn as_of_backward<'left, 'right>(
             entries.push(Entry::Matched { right_index, age });
         } else {
             too_old += 1;
-            entries.push(Entry::TooOld);
+            entries.push(Entry::TooOld { right_index, age });
         }
     }
 
@@ -222,7 +228,7 @@ mod tests {
             AsOfOutcome::NoPriorObservation,
             matched(1, 0),
             matched(1, 2),
-            AsOfOutcome::TooOld,
+            AsOfOutcome::TooOld { right_index: 1, age: Duration::from_nanos(3) },
             matched(2, 0),
             matched(2, 2),
         ];
@@ -277,7 +283,30 @@ mod tests {
             rows.next().unwrap().outcome,
             AsOfOutcome::Matched { age: Duration::ZERO, .. }
         ));
-        assert_eq!(rows.next().unwrap().outcome, AsOfOutcome::TooOld);
+        assert_eq!(
+            rows.next().unwrap().outcome,
+            AsOfOutcome::TooOld { right_index: 0, age: Duration::from_nanos(1) },
+        );
+    }
+
+    #[test]
+    fn stale_diagnostics_use_indices_in_the_supplied_views() {
+        let left_times = [-1, 3].map(Timestamp::from_unix_nanos);
+        let right_times = [-2, 0, 2].map(Timestamp::from_unix_nanos);
+        let right_values = [98.0, 100.0, 102.0];
+        let left = SeriesView::new(&left_times, &[99.0, 103.0]).unwrap();
+        let right = SeriesView::new(&right_times, &right_values).unwrap();
+        let left = left.between(Timestamp::UNIX_EPOCH..).unwrap();
+        let right = right.between(Timestamp::UNIX_EPOCH..).unwrap();
+
+        let aligned = as_of_backward(left, right, Duration::ZERO);
+        let row = aligned.iter().next().unwrap();
+
+        assert_eq!(row.left_index, 0);
+        assert_eq!(
+            row.outcome,
+            AsOfOutcome::TooOld { right_index: 1, age: Duration::from_nanos(1) },
+        );
     }
 
     #[test]
@@ -299,6 +328,9 @@ mod tests {
 
         let just_below_span = Duration::from_nanos(u64::MAX - 1);
         let aligned = as_of_backward(left, right, just_below_span);
-        assert_eq!(aligned.iter().next().unwrap().outcome, AsOfOutcome::TooOld);
+        assert_eq!(
+            aligned.iter().next().unwrap().outcome,
+            AsOfOutcome::TooOld { right_index: 0, age: span },
+        );
     }
 }

@@ -83,8 +83,10 @@ impl InnerAlignment<'_, '_> {
 /// # use unrvl_timeseries::{SeriesError, SeriesView, Timestamp, align};
 /// let left_times = [1, 3, 5].map(Timestamp::from_unix_nanos);
 /// let right_times = [3, 4, 5].map(Timestamp::from_unix_nanos);
-/// let left = SeriesView::new(&left_times, &[10.0, 30.0, 50.0])?;
-/// let right = SeriesView::new(&right_times, &[300.0, 400.0, 500.0])?;
+/// let left_values = [10.0, 30.0, 50.0];
+/// let right_values = [300.0, 400.0, 500.0];
+/// let left = SeriesView::new(&left_times, &left_values)?;
+/// let right = SeriesView::new(&right_times, &right_values)?;
 ///
 /// let aligned = align::inner(left, right);
 /// let first = aligned.iter().next().unwrap();
@@ -112,9 +114,10 @@ mod tests {
     fn pairs_equal_timestamps_and_counts_unmatched_observations() {
         let left_times = [-2, 1, 3, 5, 9].map(Timestamp::from_unix_nanos);
         let right_times = [0, 3, 4, 5, 8, 10].map(Timestamp::from_unix_nanos);
-        let left = SeriesView::new(&left_times, &[-20.0, 10.0, 30.0, 50.0, 90.0]).unwrap();
-        let right =
-            SeriesView::new(&right_times, &[0.0, 300.0, 400.0, 500.0, 800.0, 1000.0]).unwrap();
+        let left_values = [-20.0, 10.0, 30.0, 50.0, 90.0];
+        let right_values = [0.0, 300.0, 400.0, 500.0, 800.0, 1000.0];
+        let left = SeriesView::new(&left_times, &left_values).unwrap();
+        let right = SeriesView::new(&right_times, &right_values).unwrap();
 
         let aligned = inner(left, right);
         let pairs: Vec<_> = aligned.iter().collect();
@@ -172,8 +175,10 @@ mod tests {
         let left_times = [i64::MIN, distant, distant + 1, i64::MAX].map(Timestamp::from_unix_nanos);
         let right_times = [i64::MIN, distant + 1, i64::MAX].map(Timestamp::from_unix_nanos);
 
-        let left = SeriesView::new(&left_times, &[1.0, 2.0, 3.0, 4.0]).unwrap();
-        let right = SeriesView::new(&right_times, &[10.0, 30.0, 40.0]).unwrap();
+        let left_values = [1.0, 2.0, 3.0, 4.0];
+        let right_values = [10.0, 30.0, 40.0];
+        let left = SeriesView::new(&left_times, &left_values).unwrap();
+        let right = SeriesView::new(&right_times, &right_values).unwrap();
 
         let aligned = inner(left, right);
         let left_indices: Vec<_> = aligned.iter().map(|pair| pair.left_index).collect();
@@ -188,8 +193,10 @@ mod tests {
         let left_times = [1, 3, 5].map(Timestamp::from_unix_nanos);
         let right_times = [2, 4, 5].map(Timestamp::from_unix_nanos);
 
-        let left = SeriesView::new(&left_times, &[10.0, 30.0, 50.0]).unwrap();
-        let right = SeriesView::new(&right_times, &[20.0, 40.0, 50.0]).unwrap();
+        let left_values = [10.0, 30.0, 50.0];
+        let right_values = [20.0, 40.0, 50.0];
+        let left = SeriesView::new(&left_times, &left_values).unwrap();
+        let right = SeriesView::new(&right_times, &right_values).unwrap();
 
         let left = left.between(left_times[1]..).unwrap();
         let right = right.between(right_times[2]..).unwrap();
